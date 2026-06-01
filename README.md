@@ -216,35 +216,34 @@
 #### 3-3. 성공 상태
 
 ```
-┌──────────────────────────────────────┐
-│  AI 분석 완료                         │
-│  방충망 망 손상 또는 프레임 변형 의심    │
-│  [방충망/창호] [방문 확인 필요] [보통]   │
-│                                      │
-│  ── 확인된 근거 ─────────────────     │
-│  • 망 일부에 찢어짐...                │
-│  • 프레임 모서리 정렬이...             │
-│                                      │
-│  ── 추가 확인이 필요한 부분 ────────   │
-│  • 프레임 내부 휘어짐 여부는...        │
-│                                      │
-│  ── 추천 작업 방향 ─────────────      │
-│  망 부분 교체 또는 프레임 포함 부분 교체 │
-│  예상 비용 감각    소규모 작업 가능성    │
-│                                      │
-│  사진 기반 1차 분석 결과이며...         │
-│ ┌────────────────────────────────┐   │
-│ │       요청서 확인하기            │   │
-│ └────────────────────────────────┘   │
-└──────────────────────────────────────┘
+┌──────────────────────────────────────────────┐
+│ ⚡ 예상 시공 비용                             │
+│  소규모 작업 가능성 (부품비 제외 기준)           │
+│ ──────────────────────────────────────────── │
+│  방충망 망 손상 또는 프레임 변형 의심           │
+│  [방충망/창호]  [방문 확인 필요]  [신뢰도: 보통]│
+│                                              │
+│  ┌─── 추천 조치 ──────────────────────────┐  │
+│  │ 망 부분 교체 또는 프레임 포함 부분 교체 │  │
+│  └────────────────────────────────────────┘  │
+│  ┌─── AI 발견 사항 ───────────────────────┐  │
+│  │ • 망 일부에 찢어짐 또는 늘어짐 발견     │  │
+│  └────────────────────────────────────────┘  │
+│  ┌─── 추가 확인 필요 (경고) ──────────────┐  │
+│  │ • 프레임 내부 휘어짐 여부 확인 필요      │  │
+│  └────────────────────────────────────────┘  │
+│                                              │
+│  사진 기반 1차 분석 결과이며...              │
+│ ┌──────────────────────────────────────────┐ │
+│ │          이대로 요청서 확인하기            │ │
+│ └──────────────────────────────────────────┘ │
+└──────────────────────────────────────────────┘
 ```
 
-- **Eyebrow 텍스트**: "AI 분석 완료"를 Primary 색상(#3D5AFE)으로 표시
-- **Badge Row**: 공종(`primary`), 방문필요 여부(`warning`), 신뢰도(`neutral`) 최대 3개 Badge
-- **Section 구분**: 점선 상단 border로 구분된 정보 섹션
-- **Bullet Line**: 확인된 근거는 검은 점, 불확실 항목은 회색(muted) 점으로 차별화
-- **Key-Value Row**: 예상 비용 감각을 라벨/값 쌍으로 표시
-- **면책문구**: 중앙 정렬로 "사진 기반 1차 분석 결과이며..."
+- **Premium Brand Cost Card**: 화면 최상단에 다크 네이비 테마(`blackMuted`)와 오렌지 번개 아이콘(`accent`), `body` 폰트로 표현된 예상 비용 감각 영역이 배치됩니다.
+- **Header Area**: 분석된 문제 후보명(`problemCandidate`)과 공종(`primary`), 방문 여부(`warning`), 위험도(`danger`)를 나타내는 둥근 모서리 배지(`Badge`)가 한 행에 렌더링됩니다.
+- **추천 조치 / AI 발견 사항 / 추가 확인 필요 카드**: 각각 개별적인 흰색 카드(`Card`)에 담겨 섀도우가 적용되어 있으며, 테마 토큰(`theme.borderRadius.l`, `theme.spacing.l`)을 바탕으로 정밀한 레이아웃을 제공합니다.
+- **면책 문구 및 CTA**: 하단에 회색 톤(`textTertiary`)으로 면책 문구가 작게 표시되며, 고정 하단에 완전 둥근 캡슐형(`theme.borderRadius.pill`) CTA 버튼인 "이대로 요청서 확인하기"가 배치됩니다.
 
 ---
 
@@ -285,30 +284,34 @@ AI의 `requestDraft.structured` 데이터를 기반으로 **3개 행의 Key-Valu
 전문가 카드에는 다음 정보가 구조화되어 표시됩니다:
 
 ```
-┌────────────────────────────────────────┐
-│  김반장 홈케어           [안심 보증서]   │
-│  ★ 4.8 · 부분 교체                     │
-│                                        │
-│  비용 감각     방문                      │
-│  소규모 작업   사진으로 가능             │
-│  ──────────────────────────────────    │
-│  "사진상 망만 찢어진 것으로 보여          │
-│   현장에서 바로 부분 교체 가능합니다."    │
-│                          상세 보기 →     │
-└────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│ (👤) 김반장 홈케어                          [🛡️ 안심 보증서] │
+│                                                          │
+│  "사진상 망만 찢어진 것으로 보여                          │
+│   현장에서 바로 부분 교체 가능합니다."                      │
+│                                                          │
+│  ┌─── 작업 조건 안내 ──────────────────────────────────┐  │
+│  │ 작업 방식: 부분 교체                                │  │
+│  │ 비용 감각: 소규모 작업                              │  │
+│  │ 방문 여부: 사진 기반 확인 가능                      │  │
+│  │ 가능 여부: 🟢 작업 가능                              │  │
+│  └─────────────────────────────────────────────────────┘  │
+│                                                          │
+│ ┌──────────────────────────────────────────────────────┐ │
+│ │ 상세 조건 보기                                     (>) │ │
+│ └──────────────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────────────┘
 ```
 
-**카드에 표시되는 정보:**
+**카드에 표시되는 정보 및 디자인:**
 
-| 항목 | 소스 필드 | 설명 |
-|---|---|---|
-| 전문가 이름 | `expertName` | 상호명 |
-| 별점 | `rating` | 5점 만점 |
-| 작업 방식 | `workType` | 부분 교체 / 전체 교체 / 추가 점검 |
-| 보증서 | `warranty.type` | 안심 보증서(success) / 작업 확인서(success) / 없음 |
-| 비용 감각 | `costLevel` | 소규모 / 중간 수준 / 현장 확인 후 확정 |
-| 방문 여부 | `visitRequired` | 현장 확인 필수 / 사진으로 가능 |
-| 코멘트 | `comment` | 전문가 소견 (최대 2줄, `numberOfLines={2}`) |
+| 항목 | 소스 필드 | 설명 | 디자인 구현 |
+|---|---|---|---|
+| **전문가 이름** | `expertName` | 상호명 | 왼쪽 프로필 아바타(`account` 아이콘)와 함께 `h2` 굵은 텍스트로 표시 |
+| **보증 배지** | `warranty.type` | 보증서 유형 | `WarrantyBadge` 컴포넌트로 안심 보증서(초록), 작업 확인서(블랙), 없음(그레이) 분기 처리 |
+| **의견 코멘트** | `comment` | 전문가 소견 | `italic` 폰트와 왼쪽 보더(`borderLeftColor: theme.colors.surfaceSoft`)로 인용구처럼 표현 (최대 3줄) |
+| **정보 테이블** | `infoTable` | 시공 세부 조건 | `surfaceSoft` 배경의 둥근 박스 안에 테두리가 있는 표 형태로 구조화 |
+| **상세보기 푸터** | `cardFooter` | 상세 페이지 링크 | 블랙 배경(`theme.colors.black`)과 라운드 모서리를 활용한 슬릭한 캡슐 모양 버튼 |
 
 #### 네비게이션 특이사항
 - `expert-responses` 화면에서 뒤로가기 버튼이 제거되어 있습니다 (`headerLeft: () => null`). 요청 전송 후 이전 단계로의 실수 복귀를 방지합니다.
@@ -322,17 +325,17 @@ AI의 `requestDraft.structured` 데이터를 기반으로 **3개 행의 Key-Valu
 #### 로딩 → 에러 → 데이터 표시 (3단 상태 관리)
 - `useEffect` 내에서 `cancelled` 플래그를 활용한 **클린업 패턴**으로 컴포넌트 언마운트 시 상태 업데이트를 방지합니다.
 
-#### 상세 정보 테이블
+#### 상세 정보 및 사후관리 구성
 
-| 항목 | 표시 내용 |
-|---|---|
-| 가능 여부 | `가능` (초록) / `불가` (빨강) / `현장 확인 필요` (주황) — `getAvailableColor()` 유틸리티 함수로 색상 결정 |
-| 사전 방문 | 방문 확인 필요 / 방문 없이 바로 시공 |
-| 작업 방식 | 부분 교체 / 전체 교체 / 추가 점검 |
-| 예상 비용 | 소규모 작업 / 중간 수준 / 현장 확인 후 확정 |
-| 가능 일정 | 내일 오전 / 모레 오후 / 이번 주 주말 등 |
-
-- **상담하기 CTA**: "이 전문가와 상담하기" 버튼은 현재 MVP 범위 밖으로, Alert로 안내합니다.
+1. **상세 정보 테이블**
+   - **작업 가능 여부**: `작업 가능`(초록) / `추가 확인 필요`(주황) / `작업 불가`(빨강) 표시
+   - **작업 방식, 예상 비용, 방문 필요 여부**: 전문가 의견 카드와 함께 정밀한 라인 테이블 구조로 표시
+2. **사후관리 조건 카드 (Warranty Card)**
+   - **보증서 배지**: `LargeWarrantyBadge`가 제공 여부(안심 보증서/작업 확인서/없음)를 큼직하게 표시
+   - **사후관리 항목**: 포함된 서비스 목록(`includedCare`)을 체크 아이콘과 함께 리스트 형태로 렌더링
+   - **안내 문구**: 하단에 법적 책임 면책 문구를 둥근 안내 박스(`legalNoticeBox`)에 담아 제공
+3. **상담/의뢰하기 CTA**
+   - 하단 플로팅 푸터(`floatingFooter`)에 위치하며, 약간의 투명도가 있는 배경 위로 섀도우가 적용된 CTA 버튼이 제공됩니다. (MVP 범위 밖으로, 탭 시 안내 Alert 발생)
 
 ---
 
@@ -587,49 +590,53 @@ const result = await Promise.race([
 
 ## 🎨 디자인 시스템
 
-### UI/UX 디자인 철학 (Clean UI)
+### UI/UX 디자인 철학 (Premium Clean UI)
 
 | 원칙 | 설명 | 구현 방식 |
 |---|---|---|
-| **Minimal & Professional** | 토스(Toss) 스타일의 현대적 유틸리티 앱 UI | 여백 중심 레이아웃, 비장식적 컴포넌트 |
-| **낮은 인지 부하** | 복잡한 입력 폼 배제 | Chip 선택형 UI, 최소 텍스트 입력 |
-| **상태 기반 피드백** | 모든 비동기 상태에 맞는 전용 UI | 로딩(Skeleton), 에러(ErrorMark), 성공(Badge) |
-| **일관된 토큰 시스템** | 모든 시각 요소가 단일 출처에서 관리 | `theme/index.ts`의 Design Tokens |
-| **그림자 없는 플랫 디자인** | 깔끔한 시각적 계층 구조 | `shadows.soft`가 모두 0/transparent |
+| **Minimal & Professional** | 토스(Toss) 및 애플(Apple) 스타일의 감각적인 유틸리티 앱 UI | 여백 중심 레이아웃, 정교한 타이포그래피, 절제된 레이아웃 |
+| **낮은 인지 부하** | 복잡한 입력 양식을 배제하고 행동 유도 | Chip 토글형 UI, 라인 입력폼 및 직관적인 CTA 버튼 배치 |
+| **상태 기반 피드백** | 모든 비동기 처리 및 데이터 상태에 대응 | 로딩(Skeleton, Animated Progress), 에러(Error/Rejected View), 성공(Badge, Card 리포트) |
+| **일관된 토큰 시스템** | 모든 시각적 계층이 정해진 테마 토큰을 엄격하게 준수 | `src/theme/index.ts`의 타이포그래피, Spacing, Radius, Shadow 토큰 참조 |
+| **계층감을 주는 섀도우** | 섀도우와 레이어링을 활용하여 플로팅 및 입체감 표현 | `theme.shadows.soft` 및 `theme.shadows.medium` 적용 |
 
 ### 색상 팔레트 (theme.colors)
 
 | 토큰 | Hex 값 | 용도 | 사용 위치 |
 |---|---|---|---|
-| `primary` | `#3D5AFE` | 메인 강조, CTA 텍스트 | Eyebrow, Badge(primary), 시세 카드 가격 |
-| `primaryLight` | `#EEF1FF` | Primary 배경 | Badge(primary) 배경 |
-| `primaryDark` | `#2D44C6` | Primary 다크 변형 | 예약됨 |
-| `background` | `#FFFFFF` | 전체 화면 배경 | 모든 Screen container |
-| `surface` | `#FFFFFF` | 카드 표면 | Card(outlined), 상세 테이블 |
-| `surfaceMuted` | `#F7F8FA` | 비활성/입력 배경 | Chip(idle), TextInput, 사진 추가 타일 |
-| `textPrimary` | `#0F1115` | 주요 텍스트 + Button(primary) 배경 | 제목, 본문, CTA 버튼 배경색 |
-| `textSecondary` | `#5B6470` | 보조 텍스트 | 서브타이틀, 메타 정보 |
-| `textTertiary` | `#98A0AC` | 힌트, 면책문구, 비활성 | placeholder, disclaimer, 카운트 텍스트 |
-| `border` | `#ECEEF1` | 카드 테두리 | Card borderColor |
-| `borderStrong` | `#D9DCE2` | 강한 테두리 | Button(outline) borderColor |
-| `divider` | `#F1F2F5` | 구분선 | Section divider, KV Row 구분선, Skeleton 배경 |
-| `accent` | `#FFB38A` | 악센트 | 예약됨 |
-| `warning` / `warningLight` | `#B7791F` / `#FEF6E5` | 경고 | Badge(warning), 에러 원형 아이콘 |
-| `success` / `successLight` | `#0E8A5F` / `#E6F7EF` | 성공 | Badge(success), 전문가 가능 상태 |
-| `danger` / `dangerLight` | `#D24A48` / `#FCEBEA` | 위험 | Badge(danger), 전문가 불가 상태 |
+| `primary` | `#5B6CFF` | 메인 브랜드 컬러 (Primary Blue) | 주요 CTA 버튼, 활성화된 Chip, 포인트 하이라이트 |
+| `primaryLight` | `#EEF0FF` | Primary 연한 배경 | Badge(primary) 배경, 아이콘 배경 |
+| `primaryDark` | `#4654D9` | Primary 다크 톤 변형 | 버튼 활성화 피드백 |
+| `background` | `#F5F5F7` | 전체 화면 배경 (Cool Gray) | 모든 화면의 배경색 |
+| `surface` | `#FFFFFF` | 일반 카드 및 컨텐츠 영역 표면 | Card(outlined), 내부 테이블 등 |
+| `surfaceMuted` | `#F9F9F9` | 비활성 또는 서브 카드 표면 | Card(muted), 입력창 배경 등 |
+| `surfaceSoft` | `#F0F0F3` | 칩 비선택 상태 배경 등 | Chip(idle), Button(secondary) |
+| `white` | `#FFFFFF` | 순수 흰색 | 텍스트, 버튼 라벨, 밝은 테마 배경 |
+| `black` | `#111111` | 리치 블랙 (Rich Black) | 주요 헤더 텍스트, 다크 테두리 등 |
+| `blackMuted` | `#1C1C1E` | 어두운 그레이 | 프리미엄 어두운 카드 배경 등 |
+| `textPrimary` | `#111111` | 주요 텍스트 색상 | 타이틀, 본문 주요 항목, 버튼 배경 |
+| `textSecondary` | `#6E6E73` | 보조 텍스트 색상 (Apple-esque) | 서브타이틀, 설명 텍스트, 메타 정보 |
+| `textTertiary` | `#A1A1A6` | 힌트 및 면책 문구 | placeholder, disclaimer |
+| `border` | `#E5E5EA` | 기본 테두리 | Card 테두리 |
+| `borderStrong` | `#D1D1D6` | 강한 테두리 | Button(outline) 테두리 |
+| `divider` | `#F0F0F3` | 구분선 및 Skeleton 배경 | Section 구분선 |
+| `accent` | `#FFB38A` | 악센트 컬러 (Accent Orange) | 오렌지 계열 포인트 및 번개 아이콘 등 |
+| `warning` / `warningLight` | `#F5A623` / `#FFF5E5` | 경고 (Orange) | Badge(warning), 에러 상태 |
+| `success` / `successLight` | `#34C759` / `#E8F8EE` | 성공 (Green) | Badge(success), 안심 보증서 |
+| `danger` / `dangerLight` | `#FF3B30` / `#FFEBEA` | 위험/불가 (Red) | Badge(danger), 불가 상태 |
 
 ### 타이포그래피 스케일 (theme.typography)
 
 | 토큰 | fontSize | fontWeight | lineHeight | letterSpacing | 용도 |
 |---|---|---|---|---|---|
-| `display` | 28px | 700 | 36px | -0.5 | 메인 타이틀 (`problemCandidate`, 전문가명) |
-| `h1` | 22px | 700 | 30px | -0.3 | 화면 대제목, 에러 상태 제목 |
-| `h2` | 18px | 700 | 26px | -0.2 | SectionHeader(md), 전문가명 |
-| `h3` | 16px | 600 | 24px | — | SectionHeader(sm), Button 텍스트, 추가입력 라벨 |
-| `body` | 15px | 400 | 22px | — | 본문 텍스트, 전문가 코멘트, KV 값 |
-| `bodyStrong` | 15px | 600 | 22px | — | KV 강조 값, 별점, 전문가 상세 값 |
-| `caption` | 13px | 500 | 18px | — | Chip 텍스트, 메타 정보, CTA 텍스트 |
-| `small` | 12px | 500 | 16px | — | Eyebrow, Badge, 면책문구, StepIndicator, 사진 카운트 |
+| `display` | 32px | 800 | 40px | -0.8 | 메인 타이틀, 대표 문제명 |
+| `h1` | 24px | 700 | 32px | -0.5 | 화면 대제목, 에러 상태 제목 |
+| `h2` | 20px | 700 | 28px | -0.4 | SectionHeader(md), 전문가명 |
+| `h3` | 16px | 700 | 24px | -0.2 | SectionHeader(sm), Button 텍스트, 추가입력 라벨 |
+| `body` | 15px | 400 | 22px | -0.1 | 본문 텍스트, 전문가 코멘트, KV 값 |
+| `bodyStrong` | 15px | 600 | 22px | -0.1 | KV 강조 값, 별점, 전문가 상세 값 |
+| `caption` | 13px | 500 | 18px | 0 | Chip 텍스트, 메타 정보, CTA 텍스트 |
+| `small` | 12px | 500 | 16px | 0 | Eyebrow, Badge, 면책문구, StepIndicator, 사진 카운트 |
 
 ### 간격 (theme.spacing)
 
@@ -638,19 +645,28 @@ const result = await Promise.race([
 | `xs` | 4px | 미세 간격 (카테고리-제목 사이 등) |
 | `s` | 8px | 요소 간 좁은 간격 (Badge 사이, Skeleton 행 간격) |
 | `m` | 12px | 기본 내부 여백, 구분선 상하 간격 |
-| `l` | 20px | 페이지 패딩, 카드 패딩, 섹션 상하 여백 |
-| `xl` | 28px | 큰 섹션 간격, 푸터 하단 여백 |
-| `xxl` | 44px | 최대 간격 (로딩 상단 여백, 스크롤 하단 여유) |
+| `l` | 16px | 중간 간격, 카드 패딩 |
+| `xl` | 24px | 페이지 전체 패딩, 큰 카드 패딩, 넓은 여백 |
+| `xxl` | 32px | 큰 섹션 간격, 넓은 레이아웃 분할 |
+| `xxxl` | 48px | 최대 간격 (화면 하단 여유, 긴 스크롤 여백) |
 
 ### 테두리 반경 (theme.borderRadius)
 
 | 토큰 | 값 | 용도 |
 |---|---|---|
-| `s` | 6px | Badge 모서리 |
-| `m` | 10px | Button(sm) 모서리 |
-| `l` | 14px | Card, Button(md), TextInput, 사진 타일 |
-| `xl` | 20px | 대형 컨테이너 (예약) |
-| `round` | 9999px | Chip (완전 둥근 모서리), 프로그레스 바 |
+| `s` | 8px | Badge 모서리 |
+| `m` | 12px | 보조 버튼(sm) 모서리 |
+| `l` | 16px | 기본 카드(Card), 버튼(md), 텍스트 입력창 |
+| `xl` | 24px | 큰 카드 모서리, 시각적으로 강조된 박스 |
+| `xxl` | 32px | 매우 큰 프리미엄 카드 모서리 (예: 분석 화면의 예상 시공가 안내 카드) |
+| `pill` | 9999px | Chip (완전 둥근 모서리), 햅틱 버튼, Badge(둥근형) |
+
+### 그림자 (theme.shadows)
+
+| 토큰 | 설정 값 | 용도 |
+|---|---|---|
+| `soft` | `shadowColor: '#000000'`, `offset: {0, 4}`, `opacity: 0.04`, `radius: 12`, `elevation: 2` | 플로팅 카드, 기본 칩 컴포넌트의 은은한 입체감 |
+| `medium` | `shadowColor: '#000000'`, `offset: {0, 8}`, `opacity: 0.08`, `radius: 24`, `elevation: 4` | 활성화된 메인 카드, 강조 영역의 깊이감 표현 |
 
 ---
 
@@ -672,13 +688,13 @@ interface BadgeProps {
 **Variant 매핑:**
 | variant | 배경색 | 텍스트색 | 사용 예 |
 |---|---|---|---|
-| `primary` | `primaryLight (#EEF1FF)` | `primary (#3D5AFE)` | 공종 분류 Badge |
-| `success` | `successLight (#E6F7EF)` | `success (#0E8A5F)` | 안심 보증서, 작업 확인서 |
-| `warning` | `warningLight (#FEF6E5)` | `warning (#B7791F)` | 방문 확인 필요 |
-| `danger` | `dangerLight (#FCEBEA)` | `danger (#D24A48)` | 위험도 높음 |
-| `neutral` | `surfaceMuted (#F7F8FA)` | `textSecondary (#5B6470)` | 신뢰도 표시 |
+| `primary` | `primaryLight (#EEF0FF)` | `primary (#5B6CFF)` | 공종 분류 Badge |
+| `success` | `successLight (#E8F8EE)` | `success (#34C759)` | 안심 보증서 상태 등 |
+| `warning` | `warningLight (#FFF5E5)` | `warning (#F5A623)` | 방문 확인 필요 등 |
+| `danger` | `dangerLight (#FFEBEA)` | `danger (#FF3B30)` | 위험도 높음 등 |
+| `neutral` | `surfaceMuted (#F9F9F9)` | `textSecondary (#6E6E73)` | 신뢰도 표시 등 |
 
-**스타일 특징:** paddingHorizontal 8px, paddingVertical 4px, borderRadius `s(6px)`, `alignSelf: 'flex-start'` (내용 크기에 맞게 축소)
+**스타일 특징:** paddingHorizontal 8px, paddingVertical 4px, borderRadius `s (8px)`, `alignSelf: 'flex-start'` (내용 크기에 맞게 축소)
 
 ---
 
@@ -700,16 +716,16 @@ interface ButtonProps extends TouchableOpacityProps {
 **Variant 매핑:**
 | variant | 배경색 | 텍스트색 | 테두리 | 용도 |
 |---|---|---|---|---|
-| `primary` | `textPrimary (#0F1115)` | `white (#FFFFFF)` | — | 메인 CTA (진한 검정 배경) |
-| `secondary` | `surfaceMuted (#F7F8FA)` | `textPrimary` | — | 보조 액션 |
-| `outline` | `surface (#FFFFFF)` | `textPrimary` | `borderStrong (#D9DCE2)` 1px | 재시도, 뒤로가기 |
+| `primary` | `primary (#5B6CFF)` | `white (#FFFFFF)` | — | 메인 CTA (브랜드 컬러 배경) |
+| `secondary` | `surfaceSoft (#F0F0F3)` | `textPrimary` | — | 보조 액션 |
+| `outline` | `white (#FFFFFF)` | `textPrimary` | `borderStrong (#D1D1D6)` 1.5px | 재시도, 뒤로가기 |
 | `ghost` | 투명 | `textPrimary` | — | 인라인 액션 |
 
 **Size 매핑:**
 | size | 높이 | paddingHorizontal | borderRadius |
 |---|---|---|---|
-| `md` (기본) | 54px | 20px | `l (14px)` |
-| `sm` | 40px | 12px | `m (10px)` |
+| `md` (기본) | 56px | 24px | `pill (9999px)` |
+| `sm` | 44px | 16px | `pill (9999px)` |
 
 **특수 동작:**
 - `disabled` 또는 `isLoading` 시 opacity 0.45 + 터치 비활성
@@ -732,8 +748,10 @@ interface CardProps extends ViewProps {
 
 | variant | 배경 | 테두리 | 용도 |
 |---|---|---|---|
-| `outlined` (기본) | `surface (#FFFFFF)` | `border (#ECEEF1)` 1px | 시세 카드, 상세 정보 카드 |
-| `muted` | `surfaceMuted (#F7F8FA)` | — | 비활성/배경 카드 |
+| `outlined` (기본) | `surface (#FFFFFF)` | `border (#E5E5EA)` 1px | 시세 카드, 상세 정보 카드 |
+| `muted` | `surfaceMuted (#F9F9F9)` | — | 비활성/배경 카드 |
+
+**스타일 특징:** borderRadius `l (16px)`, padding `l (16px)`, marginBottom `m (12px)`
 
 ---
 
@@ -751,12 +769,12 @@ interface ChipProps {
 ```
 
 **상태별 스타일:**
-| 상태 | 배경 | 텍스트 색 |
-|---|---|---|
-| `idle` (비선택) | `surfaceMuted (#F7F8FA)` | `textSecondary (#5B6470)` |
-| `selected` (선택) | `textPrimary (#0F1115)` | `white (#FFFFFF)` |
+| 상태 | 배경 | 텍스트 색 | 섀도우 |
+|---|---|---|---|
+| `idle` (비선택) | `surfaceSoft (#F0F0F3)` | `textSecondary (#6E6E73)` | 없음 |
+| `selected` (선택) | `primary (#5B6CFF)` | `white (#FFFFFF)` | `primary` 테마 섀도우 + elevation 3 |
 
-**크기:** height 36px, paddingHorizontal 14px, `borderRadius: round (9999px)` (완전 둥근 pill 형태)
+**크기:** height 40px, paddingHorizontal 18px, `borderRadius: pill (9999px)` (완전 둥근 pill 형태)
 
 ---
 
@@ -775,8 +793,8 @@ interface StepIndicatorProps {
 
 **구조:**
 - 상단: 3px 높이의 프로그레스 바 (`width: (current/total) * 100%`)
-  - 트랙: `divider (#F1F2F5)` 배경
-  - 채움: `textPrimary (#0F1115)` 배경
+  - 트랙: `divider (#F0F0F3)` 배경
+  - 채움: `textPrimary (#111111)` 배경
 - 하단: 왼쪽 라벨 + 오른쪽 "1 / 2" 카운트
 
 ---
@@ -790,7 +808,7 @@ interface StepIndicatorProps {
 interface SkeletonProps {
   width?: number | `${number}%`;  // 기본 '100%'
   height?: number;                 // 기본 14px
-  radius?: number;                 // 기본 borderRadius.s (6px)
+  radius?: number;                 // 기본 borderRadius.s (8px)
   style?: ViewStyle;
 }
 ```
@@ -830,7 +848,7 @@ interface Props {
 interface SectionHeaderProps {
   title: string;
   subtitle?: string;
-  size?: 'md' | 'sm';  // md: h2(18px), sm: h3(16px)
+  size?: 'md' | 'sm';  // md: h2(20px), sm: h3(16px)
 }
 ```
 

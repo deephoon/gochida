@@ -22,21 +22,28 @@ export const Chip = ({ label, selected, onPress }: ChipProps) => {
 
 const styles = StyleSheet.create({
   base: {
-    paddingHorizontal: 14,
-    height: 36,
+    paddingHorizontal: 18,
+    height: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: theme.borderRadius.round,
+    borderRadius: theme.borderRadius.pill,
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   idle: {
-    backgroundColor: theme.colors.surfaceMuted,
+    backgroundColor: theme.colors.surfaceSoft,
+    borderColor: 'rgba(0,0,0,0.02)',
   },
   selected: {
-    backgroundColor: theme.colors.textPrimary,
+    backgroundColor: theme.colors.primary,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 3,
   },
   text: {
-    ...theme.typography.caption,
-    fontWeight: '600',
+    ...theme.typography.bodyStrong,
   },
   textIdle: { color: theme.colors.textSecondary },
   textSelected: { color: theme.colors.white },

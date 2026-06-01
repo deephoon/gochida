@@ -1,97 +1,77 @@
 import React, { createContext, useCallback, useContext, useMemo, useState, ReactNode } from 'react';
-import { AIRepairAnalysis } from '../types';
+import type { RequestContextValue, AIRepairAnalysis } from '../types';
 import { analyzeImage } from '../services/aiService';
 
-interface RequestContextData {
-  imageUris: string[];
-  imageBase64s: string[];
-  location: string;
-  symptom: string;
-  analysisResult: AIRepairAnalysis | null;
-  draftText: string;
-  isLoading: boolean;
-  error: string | null;
-
-  setImageUris: (uris: string[]) => void;
-  setImageBase64s: (base64s: string[]) => void;
-  setLocation: (loc: string) => void;
-  setSymptom: (sym: string) => void;
-  setAnalysisResult: (result: AIRepairAnalysis | null) => void;
-  setDraftText: (text: string) => void;
-  clearRequest: () => void;
-  
-  // State Flow: View에서 Service를 직접 호출하지 않고 Context를 통해 상태와 통신을 제어
-  submitAnalysis: () => Promise<void>;
-}
-
-const RequestContext = createContext<RequestContextData | undefined>(undefined);
+const RequestContext = createContext<RequestContextValue | undefined>(undefined);
 
 export const RequestProvider = ({ children }: { children: ReactNode }) => {
   const [imageUris, setImageUris] = useState<string[]>([]);
   const [imageBase64s, setImageBase64s] = useState<string[]>([]);
   const [location, setLocation] = useState<string>('');
   const [symptom, setSymptom] = useState<string>('');
+  const [aiDraft, setAiDraft] = useState<string>('');
+  const [selectedExpertId, setSelectedExpertId] = useState<string>('');
   const [analysisResult, setAnalysisResult] = useState<AIRepairAnalysis | null>(null);
-  const [draftText, setDraftText] = useState<string>('');
-  
-  // 비동기 통신 상태 관리
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  const addImageUri = useCallback((uri: string) => {
+    setImageUris((prev) => [...prev, uri]);
+  }, []);
+
+  const removeImageUri = useCallback((uri: string) => {
+    setImageUris((prev) => prev.filter((item) => item !== uri));
+  }, []);
 
   const clearRequest = useCallback(() => {
     setImageUris([]);
     setImageBase64s([]);
     setLocation('');
     setSymptom('');
+    setAiDraft('');
+    setSelectedExpertId('');
     setAnalysisResult(null);
-    setDraftText('');
     setIsLoading(false);
     setError(null);
   }, []);
 
   const submitAnalysis = useCallback(async () => {
-    if (imageBase64s.length === 0 || !location || !symptom) {
-      setError('입력 데이터가 부족합니다.');
-      return;
-    }
-
     setIsLoading(true);
     setError(null);
-
     try {
       const result = await analyzeImage(location, symptom, imageBase64s);
-      
-      // AI가 사진 판독 불가/생활시공 무관으로 거부한 경우
-      if (result.status === 'REJECTED') {
-        setError(result.rejection_reason || 'AI가 분석할 수 없는 사진입니다.');
-        setAnalysisResult(null);
+      setAnalysisResult(result);
+      if (result.status === 'SUCCESS' && result.requestDraft?.message) {
+        setAiDraft(result.requestDraft.message);
       } else {
-        setAnalysisResult(result);
+        setAiDraft('전문가 상담 후 결정');
       }
-    } catch (e: any) {
-      setError(e.message || '분석 중 오류가 발생했습니다.');
-      setAnalysisResult(null);
+    } catch (err: any) {
+      setError(err.message || '알 수 없는 오류가 발생했습니다.');
     } finally {
       setIsLoading(false);
     }
-  }, [imageBase64s, location, symptom]);
+  }, [location, symptom, imageBase64s]);
 
-  const value = useMemo<RequestContextData>(
+  const value = useMemo<RequestContextValue>(
     () => ({
       imageUris,
       imageBase64s,
       location,
       symptom,
+      aiDraft,
+      selectedExpertId,
       analysisResult,
-      draftText,
       isLoading,
       error,
       setImageUris,
       setImageBase64s,
+      addImageUri,
+      removeImageUri,
       setLocation,
       setSymptom,
-      setAnalysisResult,
-      setDraftText,
+      setAiDraft,
+      setSelectedExpertId,
       clearRequest,
       submitAnalysis,
     }),
@@ -100,10 +80,13 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
       imageBase64s,
       location,
       symptom,
+      aiDraft,
+      selectedExpertId,
       analysisResult,
-      draftText,
       isLoading,
       error,
+      addImageUri,
+      removeImageUri,
       clearRequest,
       submitAnalysis,
     ]

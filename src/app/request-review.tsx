@@ -7,6 +7,7 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Button } from '../components/Button';
@@ -15,14 +16,14 @@ import { useRequest } from '../context/RequestContext';
 import { theme } from '../theme';
 
 export default function RequestReviewScreen() {
-  const { analysisResult } = useRequest();
+  const { analysisResult, imageUris, location, symptom } = useRequest();
   const [userNote, setUserNote] = useState('');
 
   const draft = analysisResult?.requestDraft?.structured || {
-    location: '',
-    symptom: '',
-    suspected_issue: '직접 확인 필요',
-    requested_work: '전문가 상담 후 결정',
+    location: location || '거실',
+    symptom: symptom || '누수',
+    suspected_issue: analysisResult?.problemCandidate || '직접 확인 필요',
+    requested_work: analysisResult?.actionRecommendation || '전문가 상담 후 결정',
   };
 
   return (
@@ -35,10 +36,18 @@ export default function RequestReviewScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <StepIndicator current={2} total={2} label="요청서 검토" />
+        <StepIndicator current={2} total={3} label="요청서 검토" />
 
         <Text style={styles.mainTitle}>전문가에게 보낼 요청서</Text>
         <Text style={styles.subtitle}>아래 내용을 확인하고 필요하면 메모를 추가하세요.</Text>
+
+        {imageUris.length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imageScroll}>
+            {imageUris.map((uri, index) => (
+              <Image key={index} source={{ uri }} style={styles.thumbnail} />
+            ))}
+          </ScrollView>
+        )}
 
         <View style={styles.kvCard}>
           {[
@@ -88,16 +97,28 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: { padding: theme.spacing.l },
 
-  mainTitle: { ...theme.typography.display, color: theme.colors.textPrimary, marginBottom: theme.spacing.s },
+  mainTitle: { fontSize: 28, fontWeight: '800', color: theme.colors.textPrimary, marginBottom: theme.spacing.s },
   subtitle: {
-    ...theme.typography.body,
+    fontSize: 16,
     color: theme.colors.textSecondary,
     marginBottom: theme.spacing.l,
   },
 
+  imageScroll: {
+    flexDirection: 'row',
+    marginBottom: theme.spacing.l,
+  },
+  thumbnail: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    marginRight: theme.spacing.s,
+    backgroundColor: theme.colors.border,
+  },
+
   kvCard: {
     backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.l,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: theme.colors.border,
     paddingHorizontal: theme.spacing.l,
@@ -105,27 +126,27 @@ const styles = StyleSheet.create({
   },
   kvRow: { paddingVertical: theme.spacing.m },
   kvRowDivider: { borderBottomWidth: 1, borderBottomColor: theme.colors.divider },
-  kvLabel: { ...theme.typography.small, color: theme.colors.textTertiary, marginBottom: 4 },
-  kvValue: { ...theme.typography.body, color: theme.colors.textPrimary },
+  kvLabel: { fontSize: 13, fontWeight: '600', color: theme.colors.textTertiary, marginBottom: 4 },
+  kvValue: { fontSize: 16, color: theme.colors.textPrimary, lineHeight: 22 },
 
-  fieldLabel: { ...theme.typography.h3, color: theme.colors.textPrimary, marginBottom: 4 },
+  fieldLabel: { fontSize: 18, fontWeight: '700', color: theme.colors.textPrimary, marginBottom: 4 },
   fieldHint: {
-    ...theme.typography.small,
+    fontSize: 14,
     color: theme.colors.textTertiary,
     marginBottom: theme.spacing.s,
   },
   input: {
     backgroundColor: theme.colors.surfaceMuted,
-    borderRadius: theme.borderRadius.l,
+    borderRadius: 16,
     padding: theme.spacing.l,
     minHeight: 120,
-    ...theme.typography.body,
+    fontSize: 16,
     color: theme.colors.textPrimary,
     marginBottom: theme.spacing.l,
   },
 
   notice: {
-    ...theme.typography.small,
+    fontSize: 12,
     color: theme.colors.textTertiary,
     lineHeight: 18,
   },

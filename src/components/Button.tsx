@@ -52,25 +52,25 @@ export const Button = ({
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: theme.borderRadius.l,
+    borderRadius: theme.borderRadius.pill,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: theme.spacing.l,
+    paddingHorizontal: theme.spacing.xl,
   },
-  md: { height: 54 },
-  sm: { height: 40, paddingHorizontal: theme.spacing.m, borderRadius: theme.borderRadius.m },
+  md: { height: 56 }, 
+  sm: { height: 44, paddingHorizontal: theme.spacing.l },
   content: { flexDirection: 'row', alignItems: 'center' },
   leftIcon: { marginRight: theme.spacing.s },
   disabled: { opacity: 0.45 },
-  text: { ...theme.typography.h3 },
+  text: { ...theme.typography.h3, letterSpacing: 0 },
 });
 
 const variantStyles = StyleSheet.create({
-  primary: { backgroundColor: theme.colors.textPrimary },
-  secondary: { backgroundColor: theme.colors.surfaceMuted },
+  primary: { backgroundColor: theme.colors.primary }, // Reverted to Blue
+  secondary: { backgroundColor: theme.colors.surfaceSoft },
   outline: {
-    backgroundColor: theme.colors.surface,
-    borderWidth: 1,
+    backgroundColor: theme.colors.white,
+    borderWidth: 1.5,
     borderColor: theme.colors.borderStrong,
   },
   ghost: { backgroundColor: 'transparent' },

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Card } from './Card';
-import { RepairPriceGuide } from '../data/repairPriceGuides';
+import { RepairPriceGuide } from '../types';
 import { theme } from '../theme';
 
 interface Props {
