@@ -75,6 +75,33 @@ export const theme = {
     xxl: 32, // For very large cards (like the premium black one)
     pill: 9999, // For buttons and badges
   },
+  // `radius` is an additive alias of `borderRadius` so new code can use the
+  // shorter token name without breaking existing `theme.borderRadius.*` usage.
+  radius: {
+    s: 8,
+    m: 12,
+    l: 16,
+    xl: 24,
+    xxl: 32,
+    pill: 9999,
+  },
+  // Interaction tokens: keep press feedback consistent across Button/Chip/Card.
+  motion: {
+    pressScale: 0.97,
+    chipPressScale: 0.96,
+    activeOpacity: 0.86,
+    disabledOpacity: 0.45,
+    fast: 120,
+    base: 180,
+    slow: 260,
+    skeletonPulse: 700,
+  },
+  // Shared layout constants for screens with a fixed bottom CTA.
+  layout: {
+    screenPadding: 20,
+    bottomCtaHeight: 56,
+    bottomSafePadding: 20,
+  },
   shadows: {
     soft: {
       shadowColor: '#000000',

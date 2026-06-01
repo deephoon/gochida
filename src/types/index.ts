@@ -2,7 +2,12 @@ export type WarrantyType = '안심 보증서' | '작업 확인서' | '없음';
 
 export interface WarrantyOption {
   type: WarrantyType;
+  /** 반드시 필수 배열로 유지 (사후관리 조건). */
   includedCare: string[];
+  // 아래는 백엔드 연동 시 채워질 수 있는 선택 필드 (현 mock 데이터와 호환).
+  available?: boolean;
+  period?: string;
+  description?: string;
 }
 
 export interface ExpertResponse {
@@ -14,6 +19,10 @@ export interface ExpertResponse {
   visitRequired: boolean;
   comment: string;
   warranty: WarrantyOption;
+  // 백엔드 연동 시 확장 가능한 선택 필드.
+  rating?: number;
+  schedule?: string;
+  trustElements?: string[];
 }
 
 export interface AIRepairAnalysis {
@@ -85,3 +94,11 @@ export interface RepairPriceGuide {
   factors: string[];
   disclaimer: string;
 }
+
+/** expert/[id] 라우트 파라미터. id가 string | string[] | undefined일 수 있음. */
+export interface ExpertDetailRouteParams {
+  id?: string | string[];
+}
+
+/** 전문가 응답/요청 제출 시 서버로 전달되는 데이터 형태. */
+export type RequestData = RequestState;

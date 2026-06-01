@@ -34,7 +34,7 @@ export function LoadingPriceGuideCard({ guide }: Props) {
       <Card style={styles.card}>
         <Text style={styles.standardTitle}>고치다의 비교 기준</Text>
         <Text style={styles.standardText}>
-          고치다는 최저가보다 작업 범위와 사후관리 가능성을 함께 비교합니다.
+          고치다는 가격만이 아니라 작업 범위와 사후관리 가능성을 함께 비교합니다.
         </Text>
       </Card>
       

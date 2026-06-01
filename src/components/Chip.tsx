@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { Pressable, Text, StyleSheet } from 'react-native';
 import { theme } from '../theme';
 
 interface ChipProps {
@@ -10,13 +10,19 @@ interface ChipProps {
 
 export const Chip = ({ label, selected, onPress }: ChipProps) => {
   return (
-    <TouchableOpacity
-      activeOpacity={0.85}
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected: !!selected }}
       onPress={onPress}
-      style={[styles.base, selected ? styles.selected : styles.idle]}
+      style={({ pressed }) => [
+        styles.base,
+        selected ? styles.selected : styles.idle,
+        // press 시 살짝 축소되어 선택 반응을 즉각적으로 느끼게 한다.
+        pressed && { transform: [{ scale: theme.motion.chipPressScale }] },
+      ]}
     >
       <Text style={[styles.text, selected ? styles.textSelected : styles.textIdle]}>{label}</Text>
-    </TouchableOpacity>
+    </Pressable>
   );
 };
 

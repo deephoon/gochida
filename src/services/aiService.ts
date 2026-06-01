@@ -82,7 +82,7 @@ const buildPrompt = (location: string, symptom: string) => `
       "additional_note": ""
     }
   },
-  "disclaimer": "사진 기반 1차 분석 결과이며, 최종 진단과 정확한 비용은 전문가 확인 후 달라질 수 있습니다."
+  "disclaimer": "사진과 입력 정보를 바탕으로 정리한 요청서 초안이며, 실제 작업 범위와 비용은 전문가 확인 후 달라질 수 있습니다."
 }
 `;
 

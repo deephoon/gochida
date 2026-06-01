@@ -29,13 +29,13 @@ const styles = StyleSheet.create({
   track: {
     height: 3,
     backgroundColor: theme.colors.divider,
-    borderRadius: theme.borderRadius.round,
+    borderRadius: theme.borderRadius.pill,
     overflow: 'hidden',
   },
   fill: {
     height: '100%',
     backgroundColor: theme.colors.textPrimary,
-    borderRadius: theme.borderRadius.round,
+    borderRadius: theme.borderRadius.pill,
   },
   row: {
     flexDirection: 'row',

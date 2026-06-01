@@ -9,9 +9,9 @@ import { theme } from '../theme';
 
 const LOADING_STEPS = [
   '사진 속 문제 부위 스캔',
-  '필요한 시공 공정 분석',
+  '필요한 시공 공정 정리',
   '유사 시공 사례 검색',
-  '최종 견적 범위 산출',
+  '참고 시공 단가 정리',
 ];
 
 const STANDARD_PRICES = [
@@ -30,7 +30,7 @@ export default function AnalysisResultScreen() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval>;
     
     if (isLoading) {
       Animated.parallel([
@@ -74,8 +74,10 @@ export default function AnalysisResultScreen() {
             <Animated.View style={[styles.loadingIconWrap, { transform: [{ scale: pulseAnim }] }]}>
               <MaterialCommunityIcons name="robot-outline" size={32} color={theme.colors.white} />
             </Animated.View>
-            <Text style={[theme.typography.h1, styles.loadingTitle]}>AI가 분석 중입니다</Text>
-            <Text style={[theme.typography.body, styles.loadingSubtitle]}>잠시만 기다려주세요</Text>
+            <Text style={[theme.typography.h1, styles.loadingTitle]}>요청서를 정리하고 있어요</Text>
+            <Text style={[theme.typography.body, styles.loadingSubtitle]}>
+              사진과 선택 정보를 바탕으로 전문가에게 전달할 내용을 정리 중입니다.
+            </Text>
           </View>
 
           <Animated.View style={[styles.stepsContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
@@ -145,7 +147,7 @@ export default function AnalysisResultScreen() {
         <View style={styles.premiumDarkCard}>
           <View style={styles.premiumDarkCardHeader}>
             <MaterialCommunityIcons name="lightning-bolt" size={24} color={theme.colors.accent} />
-            <Text style={[theme.typography.h3, styles.premiumDarkCardTitle]}>예상 시공 비용</Text>
+            <Text style={[theme.typography.h3, styles.premiumDarkCardTitle]}>참고 시공 단가</Text>
           </View>
           
           {/* CRITICAL FIX: Changed from display to body/h3 for readability of long paragraphs */}

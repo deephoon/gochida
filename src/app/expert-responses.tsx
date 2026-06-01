@@ -1,37 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { mockExpertResponses } from '../data/mockData';
 import { theme } from '../theme';
 import { useRequest } from '../context/RequestContext';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import type { WarrantyType } from '../types';
-
-function WarrantyBadge({ type }: { type: WarrantyType }) {
-  let bgColor = theme.colors.surfaceSoft;
-  let textColor = theme.colors.textSecondary;
-  let iconName = 'shield-off-outline';
-
-  if (type === '안심 보증서') {
-    bgColor = theme.colors.successLight;
-    textColor = theme.colors.success;
-    iconName = 'shield-check';
-  } else if (type === '작업 확인서') {
-    bgColor = theme.colors.black;
-    textColor = theme.colors.white;
-    iconName = 'text-box-check-outline';
-  }
-
-  return (
-    <View style={[styles.badge, { backgroundColor: bgColor }]}>
-      <MaterialCommunityIcons name={iconName as any} size={14} color={textColor} style={{ marginRight: 6 }} />
-      <Text style={[theme.typography.small, { color: textColor }]}>
-        {type === '없음' ? '확인서 없음' : type}
-      </Text>
-    </View>
-  );
-}
+import { TrustBadge } from '../components/ui/TrustBadge';
 
 export default function ExpertResponsesScreen() {
   const { setSelectedExpertId } = useRequest();
@@ -65,11 +40,15 @@ export default function ExpertResponsesScreen() {
 
         <View style={styles.list}>
           {mockExpertResponses.map((expert) => (
-            <TouchableOpacity
+            <Pressable
               key={expert.id}
-              style={styles.card}
-              activeOpacity={0.9}
+              style={({ pressed }) => [
+                styles.card,
+                pressed && { transform: [{ scale: theme.motion.pressScale }], opacity: theme.motion.activeOpacity },
+              ]}
               onPress={() => handleSelect(expert.id)}
+              accessibilityRole="button"
+              accessibilityLabel={`${expert.expertName} 상세 조건 보기`}
             >
               <View style={styles.cardHeader}>
                 <View style={styles.expertProfileWrap}>
@@ -78,7 +57,7 @@ export default function ExpertResponsesScreen() {
                   </View>
                   <Text style={[theme.typography.h2, styles.expertName]}>{expert.expertName}</Text>
                 </View>
-                <WarrantyBadge type={expert.warranty.type} />
+                <TrustBadge type={expert.warranty.type} size="sm" />
               </View>
 
               <View style={styles.commentBox}>
@@ -117,7 +96,7 @@ export default function ExpertResponsesScreen() {
                   <MaterialCommunityIcons name="chevron-right" size={18} color={theme.colors.white} />
                 </View>
               </View>
-            </TouchableOpacity>
+            </Pressable>
           ))}
         </View>
         <View style={{ height: 60 }} />

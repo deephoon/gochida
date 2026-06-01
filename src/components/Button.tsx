@@ -1,20 +1,24 @@
 import React from 'react';
 import {
-  TouchableOpacity,
+  Pressable,
   Text,
   StyleSheet,
   ActivityIndicator,
-  TouchableOpacityProps,
   View,
+  PressableProps,
+  StyleProp,
+  ViewStyle,
 } from 'react-native';
 import { theme } from '../theme';
 
-interface ButtonProps extends TouchableOpacityProps {
+interface ButtonProps extends Omit<PressableProps, 'style' | 'children' | 'disabled'> {
   title: string;
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
   size?: 'md' | 'sm';
   isLoading?: boolean;
   leftIcon?: React.ReactNode;
+  disabled?: boolean;
+  style?: StyleProp<ViewStyle>;
 }
 
 export const Button = ({
@@ -30,12 +34,24 @@ export const Button = ({
   const variantStyle = variantStyles[variant];
   const textStyle = textStyles[variant];
   const sizeStyle = size === 'sm' ? styles.sm : styles.md;
+  const isInactive = disabled || isLoading;
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.85}
-      style={[styles.container, sizeStyle, variantStyle, (disabled || isLoading) && styles.disabled, style]}
-      disabled={disabled || isLoading}
+    <Pressable
+      accessibilityRole="button"
+      disabled={isInactive}
+      style={({ pressed }) => [
+        styles.container,
+        sizeStyle,
+        variantStyle,
+        isInactive && styles.disabled,
+        // press 시 살짝 줄어들며 즉각적인 반응을 준다.
+        pressed && !isInactive && {
+          transform: [{ scale: theme.motion.pressScale }],
+          opacity: theme.motion.activeOpacity,
+        },
+        style,
+      ]}
       {...props}
     >
       {isLoading ? (
@@ -46,7 +62,7 @@ export const Button = ({
           <Text style={[styles.text, textStyle]}>{title}</Text>
         </View>
       )}
-    </TouchableOpacity>
+    </Pressable>
   );
 };
 
@@ -57,16 +73,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: theme.spacing.xl,
   },
-  md: { height: 56 }, 
+  md: { height: 56 },
   sm: { height: 44, paddingHorizontal: theme.spacing.l },
   content: { flexDirection: 'row', alignItems: 'center' },
   leftIcon: { marginRight: theme.spacing.s },
-  disabled: { opacity: 0.45 },
+  disabled: { opacity: theme.motion.disabledOpacity },
   text: { ...theme.typography.h3, letterSpacing: 0 },
 });
 
 const variantStyles = StyleSheet.create({
-  primary: { backgroundColor: theme.colors.primary }, // Reverted to Blue
+  primary: { backgroundColor: theme.colors.primary },
   secondary: { backgroundColor: theme.colors.surfaceSoft },
   outline: {
     backgroundColor: theme.colors.white,

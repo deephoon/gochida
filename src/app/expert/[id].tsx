@@ -5,37 +5,12 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { mockExpertResponses } from '../../data/mockData';
 import { Button } from '../../components/Button';
+import { TrustBadge } from '../../components/ui/TrustBadge';
 import { theme } from '../../theme';
-import type { WarrantyType } from '../../types';
-
-function LargeWarrantyBadge({ type }: { type: WarrantyType }) {
-  let bgColor = theme.colors.surfaceSoft;
-  let textColor = theme.colors.textSecondary;
-  let iconName = 'shield-off-outline';
-  let label = '확인서 제공 없음';
-
-  if (type === '안심 보증서') {
-    bgColor = theme.colors.successLight;
-    textColor = theme.colors.success;
-    iconName = 'shield-check';
-    label = '안심 보증서 제공';
-  } else if (type === '작업 확인서') {
-    bgColor = theme.colors.black;
-    textColor = theme.colors.white;
-    iconName = 'text-box-check-outline';
-    label = '작업 확인서 제공';
-  }
-
-  return (
-    <View style={[styles.largeBadge, { backgroundColor: bgColor }]}>
-      <MaterialCommunityIcons name={iconName as any} size={20} color={textColor} style={{ marginRight: 8 }} />
-      <Text style={[theme.typography.h3, { color: textColor }]}>{label}</Text>
-    </View>
-  );
-}
+import type { ExpertDetailRouteParams } from '../../types';
 
 export default function ExpertDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id } = useLocalSearchParams() as ExpertDetailRouteParams;
   const rawId = Array.isArray(id) ? id[0] : id;
 
   const expert = mockExpertResponses.find((item) => item.id === rawId);
@@ -107,18 +82,25 @@ export default function ExpertDetailScreen() {
           </View>
         </View>
 
-        {/* Premium Warranty Card (Inspired by reference dark card styling if it was a warranty) */}
+        {/* 작업 확인서: 실제 확인서처럼 보이도록 dashed border + 원형 체크마크 */}
         <View style={styles.warrantySection}>
           <View style={styles.warrantyHeader}>
-            <MaterialCommunityIcons name="shield-star" size={28} color={theme.colors.black} />
-            <Text style={[theme.typography.h1, styles.sectionTitle, { marginBottom: 0 }]}>사후관리 조건</Text>
+            <MaterialCommunityIcons name="shield-star" size={26} color={theme.colors.textPrimary} />
+            <Text style={[theme.typography.h2, styles.sectionTitle, { marginBottom: 0 }]}>
+              작업 확인서 및 사후관리 조건
+            </Text>
           </View>
-          
+
           <Text style={[theme.typography.body, styles.warrantyDesc]}>
             작업 범위와 사후관리 조건을 구조화해 사용자가 비교할 수 있도록 정리한 정보입니다.
           </Text>
 
-          <LargeWarrantyBadge type={expert.warranty.type} />
+          <View style={styles.certBadgeRow}>
+            <View style={styles.certCheck}>
+              <MaterialCommunityIcons name="check" size={20} color={theme.colors.white} />
+            </View>
+            <TrustBadge type={expert.warranty.type} size="lg" />
+          </View>
 
           <View style={styles.careList}>
             {expert.warranty.includedCare.length > 0 ? (
@@ -226,7 +208,9 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.white,
     padding: 32,
     borderRadius: 32,
-    ...theme.shadows.soft,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: theme.colors.borderStrong,
   },
   warrantyHeader: {
     flexDirection: 'row',
@@ -239,13 +223,19 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     lineHeight: 22,
   },
-  largeBadge: {
+  certBadgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
+    marginBottom: 28,
+  },
+  certCheck: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: theme.colors.success,
     justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 100,
-    marginBottom: 32,
+    alignItems: 'center',
   },
   
   careList: {
