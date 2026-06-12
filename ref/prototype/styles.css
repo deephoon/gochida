@@ -1,0 +1,121 @@
+/* ─────────────────────────────────────────────────────────────
+   고치다 (Gochida) — Premium Clean UI (Toss/Apple-esque)
+   Cool gray canvas · Brand blue · Pretendard · Soft & Floating
+   ───────────────────────────────────────────────────────────── */
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css');
+
+:root {
+  /* Brand */
+  --primary: #5B6CFF;
+  --primary-light: #EEF0FF;
+  --primary-dark: #4654D9;
+  --accent: #FFB38A;
+
+  /* Neutral & surfaces */
+  --background: #F5F5F7;
+  --surface: #FFFFFF;
+  --surface-2: #FFFFFF;
+  --surface-muted: #F9F9F9;
+  --surface-soft: #F0F0F3;
+  --premium-dark: #1E2335;
+  --black: #111111;
+  --black-muted: #1C1C1E;
+
+  /* Text */
+  --text-primary: #111111;
+  --text-secondary: #6E6E73;
+  --text-tertiary: #A1A1A6;
+  --on-dark: #FFFFFF;
+  --on-dark-soft: rgba(255,255,255,0.66);
+
+  /* Lines */
+  --border: #E5E5EA;
+  --border-strong: #D1D1D6;
+  --divider: #F0F0F3;
+
+  /* Semantic */
+  --success: #34C759;  --success-light: #E8F8EE;
+  --warning: #F5A623;  --warning-light: #FFF5E5;
+  --danger:  #FF3B30;  --danger-light:  #FFEBEA;
+
+  /* Radius */
+  --r-s: 8px; --r-m: 12px; --r-l: 16px; --r-xl: 20px; --r-xxl: 28px; --r-3xl: 32px; --r-pill: 9999px;
+
+  /* Spacing */
+  --xs: 4px; --s: 8px; --m: 12px; --l: 16px; --xl: 24px; --xxl: 32px; --xxxl: 48px;
+
+  /* Shadow */
+  --shadow-soft: 0 4px 14px rgba(17,17,17,0.05);
+  --shadow-medium: 0 10px 30px rgba(17,17,17,0.09);
+  --shadow-primary: 0 8px 20px rgba(91,108,255,0.30);
+  --shadow-float: 0 16px 40px rgba(17,17,17,0.12);
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0; padding: 0;
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background:
+    radial-gradient(1100px 760px at 14% -10%, #EAEDFF 0%, rgba(234,237,255,0) 55%),
+    radial-gradient(900px 640px at 112% 6%, #FFF1E9 0%, rgba(255,241,233,0) 52%),
+    #ECECF1;
+  min-height: 100vh;
+}
+
+/* ── Typography (Pretendard scale) ── */
+.t-display    { font-size: 32px; font-weight: 800; line-height: 40px; letter-spacing: -0.8px; }
+.t-h1         { font-size: 24px; font-weight: 800; line-height: 32px; letter-spacing: -0.6px; }
+.t-h2         { font-size: 20px; font-weight: 700; line-height: 28px; letter-spacing: -0.4px; }
+.t-h3         { font-size: 16px; font-weight: 700; line-height: 23px; letter-spacing: -0.2px; }
+.t-body-strong{ font-size: 15px; font-weight: 600; line-height: 23px; letter-spacing: -0.1px; }
+.t-body       { font-size: 15px; font-weight: 400; line-height: 23px; letter-spacing: -0.1px; }
+.t-caption    { font-size: 13px; font-weight: 500; line-height: 19px; letter-spacing: 0; }
+.t-small      { font-size: 12px; font-weight: 600; line-height: 16px; letter-spacing: 0; }
+
+.text-primary   { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-tertiary  { color: var(--text-tertiary); }
+
+.eyebrow-label { font-size: 12px; font-weight: 700; letter-spacing: 0.2px; color: var(--primary); }
+
+/* ── Animations ── */
+@keyframes skeletonPulse { 0%,100% { opacity: 0.55; } 50% { opacity: 1; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes staggerUp { from { transform: translateY(12px); } to { transform: translateY(0); } }
+@keyframes floatY { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+
+.skel { background: var(--surface-soft); border-radius: var(--r-s); animation: skeletonPulse 1.1s ease-in-out infinite; }
+
+/* ── Scrollbars hidden ── */
+.screen-scroll { overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.screen-scroll::-webkit-scrollbar { display: none; }
+
+/* ── Interactive feedback ── */
+.pressable { transition: transform 0.12s ease, opacity 0.12s ease; cursor: pointer; user-select: none; }
+.pressable:active { transform: scale(0.97); }
+
+/* stagger — transform-only so content never strands invisible */
+.stagger > * { animation: staggerUp 0.5s cubic-bezier(0.22,1,0.36,1) both; }
+.stagger > *:nth-child(1){ animation-delay: .03s; }
+.stagger > *:nth-child(2){ animation-delay: .08s; }
+.stagger > *:nth-child(3){ animation-delay: .13s; }
+.stagger > *:nth-child(4){ animation-delay: .18s; }
+.stagger > *:nth-child(5){ animation-delay: .23s; }
+.stagger > *:nth-child(6){ animation-delay: .28s; }
+.stagger > *:nth-child(7){ animation-delay: .33s; }
+.stagger > *:nth-child(8){ animation-delay: .38s; }
+
+/* Screen push transition — small transform-only slide, rests visible (fill both → translateX(0)).
+   A 20px offset never strands content off the device, unlike a full-width slide. */
+@keyframes screenEnter { from { transform: translateX(20px); } to { transform: translateX(0); } }
+@keyframes screenEnterBack { from { transform: translateX(-16px); } to { transform: translateX(0); } }
+.screen-enter { animation: screenEnter 0.30s cubic-bezier(0.32,0.72,0,1) both; }
+.screen-enter-back { animation: screenEnterBack 0.30s cubic-bezier(0.32,0.72,0,1) both; }
+
+image-slot { border-radius: 14px; }

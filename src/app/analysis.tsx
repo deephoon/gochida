@@ -1,378 +1,685 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Animated } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, Animated } from 'react-native';
 import { router } from 'expo-router';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Button } from '../components/Button';
-import { Badge } from '../components/Badge';
+import { Ionicons } from '@expo/vector-icons';
 import { useRequest } from '../context/RequestContext';
 import { theme } from '../theme';
+import { Card } from '../components/Card';
+import { Badge } from '../components/Badge';
+import { Button } from '../components/Button';
+import { AppHeader } from '../components/Header';
+import { Skeleton } from '../components/Skeleton';
+import { ASSET } from '../data/mockData';
+import { getRecommendedPriceGuides } from '../data/repairPriceGuides';
 
-const LOADING_STEPS = [
-  '사진 속 문제 부위 스캔',
-  '필요한 시공 공정 정리',
-  '유사 시공 사례 검색',
-  '참고 시공 단가 정리',
-];
+const GUIDE_ROTATE_MS = 2600;
+const GUIDE_FADE_MS = 220;
 
-const STANDARD_PRICES = [
-  { title: '수전 교체', price: '3~5만원', desc: '단순 교체 기준' },
-  { title: '실리콘 재시공', price: '5~10만원', desc: '욕실 1칸 기준' },
-  { title: '변기 부속 교체', price: '4~7만원', desc: '부속품 포함' },
-  { title: '배관 막힘 통수', price: '7~15만원', desc: '단순 막힘 기준' },
-];
-
-export default function AnalysisResultScreen() {
-  const { analysisResult, isLoading, error } = useRequest();
-  const [stepIndex, setStepIndex] = useState(0);
-  
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const slideAnim = useRef(new Animated.Value(20)).current;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+/**
+ * 로딩 중 참고 시세 영역.
+ * 위치/증상 관련 공종을 activeGuide 큰 카드로 보여주고 2.6초마다 순환하며,
+ * 나머지 추천 공종은 가로 스크롤 미니 카드로 함께 노출한다.
+ */
+function LoadingPriceGuides({ location, symptom }: { location: string; symptom: string }) {
+  const guides = useMemo(
+    () => getRecommendedPriceGuides(location, symptom, 4),
+    [location, symptom]
+  );
+  const [activeIndex, setActiveIndex] = useState(0);
+  const fade = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-    
-    if (isLoading) {
-      Animated.parallel([
-        Animated.timing(slideAnim, { toValue: 0, duration: 800, useNativeDriver: true }),
-        Animated.timing(fadeAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
-      ]).start();
+    if (guides.length < 2) return;
+    const id = setInterval(() => {
+      Animated.timing(fade, { toValue: 0, duration: GUIDE_FADE_MS, useNativeDriver: true }).start(() => {
+        setActiveIndex((i) => (i + 1) % guides.length);
+        Animated.timing(fade, { toValue: 1, duration: GUIDE_FADE_MS, useNativeDriver: true }).start();
+      });
+    }, GUIDE_ROTATE_MS);
+    return () => clearInterval(id);
+  }, [guides, fade]);
 
-      interval = setInterval(() => {
-        setStepIndex((prev) => Math.min(prev + 1, LOADING_STEPS.length - 1));
-      }, 1500);
-
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, { toValue: 1.08, duration: 1200, useNativeDriver: true }),
-          Animated.timing(pulseAnim, { toValue: 1, duration: 1200, useNativeDriver: true }),
-        ])
-      ).start();
-    }
-
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isLoading, fadeAnim, slideAnim, pulseAnim]);
-
-  if (error) {
-    return (
-      <View style={styles.errorContainer}>
-        <MaterialCommunityIcons name="alert-circle-outline" size={48} color={theme.colors.danger} />
-        <Text style={[theme.typography.bodyStrong, styles.errorText]}>{error}</Text>
-        <Button title="뒤로 가기" onPress={() => router.back()} />
-      </View>
-    );
-  }
-
-  if (isLoading || !analysisResult) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ScrollView contentContainerStyle={styles.loadingScroll} showsVerticalScrollIndicator={false}>
-          
-          <View style={styles.loadingTop}>
-            <Animated.View style={[styles.loadingIconWrap, { transform: [{ scale: pulseAnim }] }]}>
-              <MaterialCommunityIcons name="robot-outline" size={32} color={theme.colors.white} />
-            </Animated.View>
-            <Text style={[theme.typography.h1, styles.loadingTitle]}>요청서를 정리하고 있어요</Text>
-            <Text style={[theme.typography.body, styles.loadingSubtitle]}>
-              사진과 선택 정보를 바탕으로 전문가에게 전달할 내용을 정리 중입니다.
-            </Text>
-          </View>
-
-          <Animated.View style={[styles.stepsContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-            {LOADING_STEPS.map((step, idx) => {
-              const isActive = idx === stepIndex;
-              const isDone = idx < stepIndex;
-              return (
-                <View key={idx} style={[styles.stepRow, isActive && styles.stepRowActive]}>
-                  <View style={[styles.stepIconBox, isActive && styles.stepIconBoxActive, isDone && styles.stepIconBoxDone]}>
-                    {isDone ? (
-                      <MaterialCommunityIcons name="check" size={12} color={theme.colors.white} />
-                    ) : isActive ? (
-                      <MaterialCommunityIcons name="loading" size={12} color={theme.colors.primary} style={styles.spinIcon} />
-                    ) : (
-                      <View style={styles.stepDot} />
-                    )}
-                  </View>
-                  <Text style={[theme.typography.bodyStrong, styles.stepText, isActive && styles.stepTextActive, isDone && styles.stepTextDone]}>
-                    {step}
-                  </Text>
-                </View>
-              );
-            })}
-          </Animated.View>
-
-          <Animated.View style={[styles.priceGuideContainer, { opacity: fadeAnim }]}>
-            <View style={styles.priceGuideHeader}>
-              <Text style={[theme.typography.h3, styles.priceGuideTitle]}>기다리시는 동안 참고하세요</Text>
-              <Text style={[theme.typography.caption, styles.priceGuideSubtitle]}>주요 생활시공 평균 단가 (부품비 제외)</Text>
-            </View>
-            
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.priceGuideScroll}>
-              {STANDARD_PRICES.map((item, idx) => (
-                <View key={idx} style={styles.priceCard}>
-                  <View style={styles.priceCardIconWrap}>
-                    <MaterialCommunityIcons name="wallet-outline" size={18} color={theme.colors.primary} />
-                  </View>
-                  <Text style={[theme.typography.bodyStrong, styles.priceCardTitle]}>{item.title}</Text>
-                  <Text style={[theme.typography.h2, styles.priceCardValue]}>{item.price}</Text>
-                  <Text style={[theme.typography.small, styles.priceCardDesc]}>{item.desc}</Text>
-                </View>
-              ))}
-            </ScrollView>
-          </Animated.View>
-
-        </ScrollView>
-      </View>
-    );
-  }
-
-  if (analysisResult.status === 'REJECTED') {
-    return (
-      <View style={styles.errorContainer}>
-        <MaterialCommunityIcons name="image-off-outline" size={48} color={theme.colors.textSecondary} />
-        <Text style={[theme.typography.h2, styles.errorTitle]}>분석할 수 없는 사진입니다</Text>
-        <Text style={[theme.typography.body, styles.errorDesc]}>{analysisResult.rejection_reason}</Text>
-        <Button title="다시 촬영하기" onPress={() => router.back()} />
-      </View>
-    );
-  }
+  const active = guides[activeIndex];
+  if (!active) return null;
+  const others = guides.filter((g) => g.id !== active.id);
 
   return (
-    <View style={styles.container}>
-      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-        
-        {/* Premium Brand Cost Card: Dark Navy background with Orange accent */}
-        <View style={styles.premiumDarkCard}>
-          <View style={styles.premiumDarkCardHeader}>
-            <MaterialCommunityIcons name="lightning-bolt" size={24} color={theme.colors.accent} />
-            <Text style={[theme.typography.h3, styles.premiumDarkCardTitle]}>참고 시공 단가</Text>
+    <View>
+      <Text style={styles.guideSectionLabel}>참고 시공 단가</Text>
+      <Animated.View style={{ opacity: fade }}>
+        <Card radius={theme.borderRadius.xxl} style={{ marginBottom: 8 }}>
+          <Text style={styles.guideEyebrow}>{active.tradeCategory} · 참고 시세</Text>
+          <Text style={styles.guideTitle}>{active.title}</Text>
+          <View style={styles.guidePriceRow}>
+            <Text style={styles.guidePriceLabel}>평균</Text>
+            <Text style={styles.guidePriceValue}>{active.averagePrice}</Text>
           </View>
-          
-          {/* CRITICAL FIX: Changed from display to body/h3 for readability of long paragraphs */}
-          <Text style={[theme.typography.body, styles.premiumDarkCardValue]}>
-            {analysisResult.costSense}
-          </Text>
-          
-          <View style={styles.premiumDarkCardActionRow}>
-            <View style={styles.premiumDarkCardPill}>
-              <Text style={[theme.typography.small, styles.premiumDarkCardPillText]}>부품비 제외 기준</Text>
-            </View>
-          </View>
+          <View style={styles.guideFactorsDivider} />
+          <Text style={styles.guideFactorsLabel}>가격이 달라지는 이유</Text>
+          <Text style={styles.cardDesc}>{active.factors.join(' · ')}</Text>
+        </Card>
+      </Animated.View>
+      <View style={styles.guideDots}>
+        {guides.map((g, i) => (
+          <View key={g.id} style={[styles.guideDot, i === activeIndex && styles.guideDotActive]} />
+        ))}
+      </View>
+
+      {others.length > 0 && (
+        <View style={{ marginTop: 16 }}>
+          <Text style={styles.guideSectionLabel}>함께 참고하면 좋은 시공</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.miniScrollWrapper}
+            contentContainerStyle={styles.miniScroll}
+          >
+            {others.map((g) => (
+              <View key={g.id} style={styles.miniCard}>
+                <Text style={styles.miniCardTrade} numberOfLines={1}>{g.tradeCategory}</Text>
+                <Text style={styles.miniCardTitle} numberOfLines={2}>{g.title}</Text>
+                <Text style={styles.miniCardPrice}>{g.averagePrice}</Text>
+              </View>
+            ))}
+          </ScrollView>
         </View>
+      )}
 
-        <View style={styles.headerArea}>
-          <Text style={[theme.typography.h1, styles.mainTitle]}>{analysisResult.problemCandidate}</Text>
-          <View style={styles.badgeRow}>
-            <Badge label={analysisResult.tradeCategory} variant="primary" />
-            {analysisResult.visitRequired && <Badge label="방문 확인 필요" variant="warning" />}
-            {analysisResult.riskLevel === '높음' && <Badge label="고위험" variant="warning" />}
-          </View>
-        </View>
+      <Card radius={theme.borderRadius.l} style={{ paddingVertical: 16, paddingHorizontal: 18, marginTop: 16, marginBottom: 12 }}>
+        <Text style={styles.cardHeader}>고치다의 비교 기준</Text>
+        <Text style={styles.cardDesc}>최저가보다 작업 범위와 사후관리 가능성을 함께 비교합니다.</Text>
+      </Card>
+      <Text style={styles.disclaimerText}>
+        참고용 시세이며, 최종 비용은 전문가 확인 후 달라질 수 있어요.
+      </Text>
+    </View>
+  );
+}
 
-        <View style={styles.cardsContainer}>
-          
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <View style={[styles.cardIconBox, { backgroundColor: theme.colors.primaryLight }]}>
-                <MaterialCommunityIcons name="check-decagram-outline" size={22} color={theme.colors.primary} />
-              </View>
-              <Text style={[theme.typography.h2, styles.cardTitle]}>추천 조치</Text>
-            </View>
-            <View style={styles.actionBox}>
-              <Text style={[theme.typography.body, styles.actionCardBody]}>{analysisResult.actionRecommendation}</Text>
-            </View>
-          </View>
-
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <View style={[styles.cardIconBox, { backgroundColor: theme.colors.surfaceSoft }]}>
-                <MaterialCommunityIcons name="line-scan" size={22} color={theme.colors.textPrimary} />
-              </View>
-              <Text style={[theme.typography.h2, styles.cardTitle]}>AI 발견 사항</Text>
-              <View style={styles.confidenceBadge}>
-                <Text style={[theme.typography.small, styles.confidenceText]}>신뢰도: {analysisResult.confidence}</Text>
-              </View>
-            </View>
-            <View style={styles.bulletList}>
-              {analysisResult.visibleEvidence.map((line, i) => (
-                <View key={`ev-${i}`} style={styles.bulletRow}>
-                  <View style={styles.bulletDot} />
-                  <Text style={[theme.typography.body, styles.bulletText]}>{line}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-
-          {analysisResult.uncertainty.length > 0 && (
-            <View style={[styles.card, styles.warningCard]}>
-              <View style={styles.cardHeader}>
-                <View style={[styles.cardIconBox, { backgroundColor: '#FFF5E5' }]}>
-                  <MaterialCommunityIcons name="alert-circle-outline" size={22} color={theme.colors.warning} />
-                </View>
-                <Text style={[theme.typography.h2, styles.cardTitle, { color: theme.colors.warning }]}>추가 확인 필요</Text>
-              </View>
-              <View style={styles.bulletList}>
-                {analysisResult.uncertainty.map((line, i) => (
-                  <View key={`un-${i}`} style={styles.bulletRow}>
-                    <View style={[styles.bulletDot, { backgroundColor: theme.colors.warning }]} />
-                    <Text style={[theme.typography.body, styles.bulletText]}>{line}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          )}
-
-        </View>
-
-        <Text style={[theme.typography.caption, styles.disclaimer]}>{analysisResult.disclaimer}</Text>
-        <View style={{ height: 100 }} />
-      </ScrollView>
-
-      <View style={styles.footer}>
-        <Button title="이대로 요청서 확인하기" onPress={() => router.push('/request-review')} />
+/** 에러/거부 등 결과를 보여줄 수 없을 때의 안내 화면. */
+function StatusScreen({
+  icon, iconColor, iconBg, title, description, primaryLabel, onPrimary, secondaryLabel, onSecondary,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  iconColor: string;
+  iconBg: string;
+  title: string;
+  description: string;
+  primaryLabel: string;
+  onPrimary: () => void;
+  secondaryLabel: string;
+  onSecondary: () => void;
+}) {
+  return (
+    <View style={styles.statusWrap}>
+      <View style={[styles.statusIconWrap, { backgroundColor: iconBg }]}>
+        <Ionicons name={icon} size={34} color={iconColor} />
+      </View>
+      <Text style={styles.statusTitle}>{title}</Text>
+      <Text style={styles.statusDesc}>{description}</Text>
+      <View style={styles.statusActions}>
+        <Button title={secondaryLabel} variant="outline" onPress={onSecondary} />
+        <View style={{ height: 12 }} />
+        <Button title={primaryLabel} onPress={onPrimary} />
       </View>
     </View>
   );
 }
 
+export default function AnalysisScreen() {
+  const { location, symptom, imageBase64s, analysisResult: a, isLoading, error, submitAnalysis } = useRequest();
+
+  // 화면 진입 시 결과가 없고 진행 중/에러 상태가 아니며 이미지가 있을 때 요청서 정리를 시작한다.
+  useEffect(() => {
+    if (!a && !isLoading && !error && imageBase64s.length > 0) {
+      submitAnalysis();
+    }
+    // 마운트 시 1회만 트리거 (재시도는 버튼으로 처리)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const isRejected = a?.status === 'REJECTED';
+  const showLoading = isLoading || (!a && !error);
+  const showResult = !!a && !isRejected && !error;
+
+  // 실제 Gemini 응답이 일부 필드를 누락해도 렌더가 깨지지 않도록 방어한다.
+  const visibleEvidence = a?.visibleEvidence ?? [];
+  const uncertainty = a?.uncertainty ?? [];
+  const selfCheckSteps = a?.selfCheckGuide?.steps ?? [];
+  const doNotAttempt = a?.selfCheckGuide?.doNotAttemptIf ?? [];
+  const additionalQuestions = a?.additionalQuestions ?? [];
+  const showAdditionalPhotos = !!a?.additionalPhotosNeeded || additionalQuestions.length > 0;
+
+  const formatPrice = (priceRange: string) => {
+    const m = priceRange?.match(/(\d+)\D+(\d+)/);
+    return m ? `${m[1]}~${m[2]}만원` : priceRange;
+  };
+
+  const handleRetry = () => submitAnalysis();
+  const handleManual = () => router.push('/request-review');
+  const handleReshoot = () => router.back();
+
+  return (
+    <View style={styles.container}>
+      <AppHeader title="AI 요청서 정리" onBack={() => router.back()} />
+
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: showResult ? 150 : 40 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        {showLoading ? (
+          <View>
+            <Text style={styles.h1}>요청서를 정리하고 있어요</Text>
+            <Text style={styles.bodyText}>
+              사진 속 문제 범위와 필요한 공종을 확인 중입니다. 보통 10초 안에 끝나요.
+            </Text>
+            <View style={{ marginVertical: 24, marginBottom: 28 }}>
+              <Skeleton width="58%" height={16} style={{ marginBottom: 12 }} />
+              <Skeleton width="90%" height={16} style={{ marginBottom: 12 }} />
+              <Skeleton width="74%" height={16} />
+            </View>
+            <LoadingPriceGuides location={location} symptom={symptom} />
+          </View>
+        ) : error ? (
+          <StatusScreen
+            icon="alert-circle"
+            iconColor={theme.colors.warning}
+            iconBg={theme.colors.warningLight}
+            title="요청서를 정리하지 못했어요"
+            description={error}
+            secondaryLabel="다시 시도하기"
+            onSecondary={handleRetry}
+            primaryLabel="직접 요청서 작성하기"
+            onPrimary={handleManual}
+          />
+        ) : isRejected ? (
+          <StatusScreen
+            icon="image"
+            iconColor={theme.colors.primary}
+            iconBg={theme.colors.primaryLight}
+            title="사진을 다시 확인해 주세요"
+            description={a?.rejection_reason || '문제 부위가 잘 보이는 사진으로 다시 시도하면 더 정확한 요청서를 만들 수 있어요.'}
+            secondaryLabel="사진 다시 올리기"
+            onSecondary={handleReshoot}
+            primaryLabel="직접 요청서 작성하기"
+            onPrimary={handleManual}
+          />
+        ) : a ? (
+          <View>
+            {/* 참고 비용 카드 (확정 견적 아님) */}
+            <View style={styles.costCard}>
+              <View style={styles.costCircle} />
+              <Image source={ASSET.priceGuide} style={styles.costImage} />
+              <View style={styles.costContent}>
+                <View style={styles.costHeaderRow}>
+                  <View style={styles.costIconWrap}>
+                    <Ionicons name="flash" size={15} color={theme.colors.accent} />
+                  </View>
+                  <Text style={styles.costEyebrow}>참고 비용 감각</Text>
+                </View>
+                <Text style={styles.costPrice}>{formatPrice(a.priceGuide?.priceRange || '')}</Text>
+                <Text style={styles.costDesc}>{a.costSense} · {a.priceGuide?.tradeCategory} 참고 시세 · 부품비 제외</Text>
+              </View>
+            </View>
+
+            {/* 문제 후보 헤더 */}
+            <View style={{ marginTop: 24 }}>
+              <Text style={styles.h1}>{a.problemCandidate}</Text>
+              <View style={styles.badgeRow}>
+                <Badge label={a.tradeCategory} variant="primary" icon="wrench" />
+                {a.visitRequired && <Badge label="방문 확인 필요" variant="warning" dot />}
+                <Badge label={`신뢰도 ${a.confidence}`} variant="neutral" dot />
+                {a.riskLevel === '높음' && <Badge label="위험도 높음" variant="danger" icon="warning" />}
+              </View>
+            </View>
+
+            {/* 전문가에게 전달할 요청 방향 */}
+            <Card radius={theme.borderRadius.xxl} style={{ marginTop: 20 }}>
+              <View style={styles.cardIconHeader}>
+                <Ionicons name="sparkles" size={18} color={theme.colors.primary} />
+                <Text style={styles.h3}>전문가에게 전달할 요청 방향</Text>
+              </View>
+              <View style={styles.recommendationWrap}>
+                <Text style={styles.recommendationText}>{a.actionRecommendation}</Text>
+              </View>
+            </Card>
+
+            {/* AI가 사진에서 확인한 내용 */}
+            <Card radius={theme.borderRadius.xxl} style={{ marginTop: 12 }}>
+              <View style={styles.cardIconHeader}>
+                <Ionicons name="checkmark-circle" size={18} color={theme.colors.success} />
+                <Text style={styles.h3}>사진에서 확인한 내용</Text>
+              </View>
+              {visibleEvidence.map((e: string, i: number) => (
+                <View key={i} style={[styles.listItem, i === visibleEvidence.length - 1 && { marginBottom: 0 }]}>
+                  <Ionicons name="checkmark-circle" size={18} color={theme.colors.success} style={{ marginTop: 1 }} />
+                  <Text style={styles.listText}>{e}</Text>
+                </View>
+              ))}
+            </Card>
+
+            {/* 추가 확인이 필요한 내용 (불확실) */}
+            <Card radius={theme.borderRadius.xxl} style={styles.warningCard}>
+              <View style={styles.cardIconHeader}>
+                <Ionicons name="warning" size={16} color="#C77F12" />
+                <Text style={styles.warningCardTitle}>추가 확인이 필요해요</Text>
+              </View>
+              {uncertainty.map((u: string, i: number) => (
+                <View key={i} style={[styles.listItem, i === uncertainty.length - 1 && { marginBottom: 0 }]}>
+                  <View style={styles.warningDot} />
+                  <Text style={styles.warningListText}>{u}</Text>
+                </View>
+              ))}
+            </Card>
+
+            {/* 추가 사진/정보 권장 카드 */}
+            {showAdditionalPhotos && (
+              <Card radius={theme.borderRadius.xxl} style={{ marginTop: 12 }}>
+                <View style={styles.cardIconHeader}>
+                  <Ionicons name="camera" size={18} color={theme.colors.primary} />
+                  <Text style={styles.h3}>이런 사진을 추가하면 더 정확해져요</Text>
+                </View>
+                {additionalQuestions.map((q: string, i: number) => (
+                  <View key={i} style={styles.listItem}>
+                    <Ionicons name="add-circle" size={18} color={theme.colors.primary} style={{ marginTop: 1 }} />
+                    <Text style={styles.listText}>{q}</Text>
+                  </View>
+                ))}
+                <Button
+                  title="사진 추가하러 가기"
+                  variant="outline"
+                  size="sm"
+                  onPress={handleReshoot}
+                />
+              </Card>
+            )}
+
+            {/* 직접 확인 가이드 + 주의 */}
+            <Card radius={theme.borderRadius.xxl} style={{ marginTop: 12 }}>
+              <Text style={[styles.h3, { marginBottom: 14 }]}>직접 확인해 볼 수 있어요</Text>
+              {selfCheckSteps.map((s: string, i: number) => (
+                <View key={i} style={styles.stepItem}>
+                  <View style={styles.stepNumber}>
+                    <Text style={styles.stepNumberText}>{i + 1}</Text>
+                  </View>
+                  <Text style={styles.listText}>{s}</Text>
+                </View>
+              ))}
+              <View style={styles.dangerBox}>
+                <Text style={styles.dangerBoxTitle}>이런 경우 직접 시도하지 마세요</Text>
+                {doNotAttempt.map((d: string, i: number) => (
+                  <Text key={i} style={styles.dangerBoxText}>· {d}</Text>
+                ))}
+              </View>
+            </Card>
+
+            <Text style={styles.bottomDisclaimer}>{a.disclaimer}</Text>
+          </View>
+        ) : null}
+      </ScrollView>
+
+      {showResult && (
+        <View style={styles.footer}>
+          <Button
+            title="이대로 요청서 확인하기"
+            onPress={() => router.push('/request-review')}
+            leftIcon={<Ionicons name="checkmark" size={20} color="#FFF" />}
+          />
+        </View>
+      )}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.background },
-  scroll: { flex: 1, padding: theme.spacing.xl },
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
+  scroll: { flex: 1 },
+  scrollContent: { paddingHorizontal: 24 },
 
-  loadingContainer: { flex: 1, backgroundColor: theme.colors.background },
-  loadingScroll: { padding: theme.spacing.xl, paddingBottom: 40 },
-  loadingTop: { marginTop: 80, alignItems: 'center', marginBottom: 40 },
-  loadingIconWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: theme.colors.primary, // Brand Blue
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: theme.spacing.xl,
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 8,
+  // Text Styles
+  h1: {
+    ...theme.typography.h1,
+    color: theme.colors.textPrimary,
   },
-  loadingTitle: { color: theme.colors.textPrimary, marginBottom: 8, textAlign: 'center' },
-  loadingSubtitle: { color: theme.colors.textSecondary, textAlign: 'center' },
-  
-  stepsContainer: { 
-    width: '100%', 
-    backgroundColor: theme.colors.white, 
-    padding: 32, 
-    borderRadius: 24, 
-    marginBottom: 40,
-    ...theme.shadows.soft,
+  h3: {
+    ...theme.typography.h3,
+    color: theme.colors.textPrimary,
   },
-  stepRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 24, opacity: 0.4 },
-  stepRowActive: { opacity: 1 },
-  stepIconBox: { 
-    width: 24, 
-    height: 24, 
-    borderRadius: 12, 
-    backgroundColor: theme.colors.surfaceSoft, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    marginRight: 16, 
-  },
-  stepIconBoxActive: { backgroundColor: theme.colors.primaryLight },
-  stepIconBoxDone: { backgroundColor: theme.colors.primary },
-  stepDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: theme.colors.textTertiary },
-  stepText: { color: theme.colors.textSecondary },
-  stepTextActive: { color: theme.colors.primaryDark },
-  stepTextDone: { color: theme.colors.textPrimary, textDecorationLine: 'line-through', opacity: 0.5 },
-  spinIcon: { transform: [{ rotate: '180deg' }] },
-
-  priceGuideContainer: { width: '100%' },
-  priceGuideHeader: { marginBottom: 16 },
-  priceGuideTitle: { color: theme.colors.textPrimary, marginBottom: 4 },
-  priceGuideSubtitle: { color: theme.colors.textSecondary },
-  priceGuideScroll: { gap: 16, paddingRight: theme.spacing.xl, paddingBottom: 20 },
-  priceCard: {
-    backgroundColor: theme.colors.white,
-    padding: 24,
-    borderRadius: 24,
-    width: 160,
-    ...theme.shadows.soft,
-  },
-  priceCardIconWrap: {
-    width: 36, height: 36, borderRadius: 18, backgroundColor: theme.colors.primaryLight,
-    justifyContent: 'center', alignItems: 'center', marginBottom: 16
-  },
-  priceCardTitle: { color: theme.colors.textSecondary, marginBottom: 8 },
-  priceCardValue: { color: theme.colors.textPrimary, marginBottom: 4 },
-  priceCardDesc: { color: theme.colors.textTertiary },
-
-  errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: theme.spacing.xl },
-  errorTitle: { color: theme.colors.textPrimary, marginTop: theme.spacing.m, marginBottom: theme.spacing.s },
-  errorDesc: { color: theme.colors.textSecondary, textAlign: 'center', marginBottom: theme.spacing.xl },
-  errorText: { color: theme.colors.textPrimary, textAlign: 'center', marginTop: theme.spacing.m, marginBottom: theme.spacing.xl },
-
-  // Dark Premium Cost Card (Deep Navy)
-  premiumDarkCard: {
-    backgroundColor: '#1E2335', // Deep Navy Blue instead of harsh black
-    borderRadius: 24,
-    padding: 32,
+  bodyText: {
+    ...theme.typography.body,
+    color: theme.colors.textSecondary,
     marginTop: 8,
-    marginBottom: 32,
-    ...theme.shadows.medium,
   },
-  premiumDarkCardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 },
-  premiumDarkCardTitle: { color: theme.colors.white, opacity: 0.9 },
-  premiumDarkCardValue: { color: theme.colors.white, marginBottom: 24, lineHeight: 26 }, // Much more readable
-  premiumDarkCardActionRow: { flexDirection: 'row', gap: 12 },
-  premiumDarkCardPill: { 
-    backgroundColor: 'rgba(255,255,255,0.1)', 
-    paddingHorizontal: 16, 
-    paddingVertical: 8, 
-    borderRadius: 100 
+
+  // Status (error / rejected) screen
+  statusWrap: {
+    alignItems: 'center',
+    paddingTop: 80,
+    paddingHorizontal: 8,
   },
-  premiumDarkCardPillText: { color: theme.colors.white },
+  statusIconWrap: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 22,
+  },
+  statusTitle: {
+    ...theme.typography.h2,
+    color: theme.colors.textPrimary,
+    textAlign: 'center',
+  },
+  statusDesc: {
+    ...theme.typography.body,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+    marginTop: 10,
+    lineHeight: 23,
+  },
+  statusActions: {
+    alignSelf: 'stretch',
+    marginTop: 32,
+  },
 
-  headerArea: { marginBottom: 24, paddingHorizontal: 4 },
-  mainTitle: { color: theme.colors.textPrimary, marginBottom: 16, lineHeight: 34 },
-  badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-
-  cardsContainer: { gap: 20 },
-  card: { 
-    backgroundColor: theme.colors.white, 
-    padding: 24, 
-    borderRadius: 24, 
+  // Guide Card Styles
+  guideSectionLabel: {
+    ...theme.typography.small,
+    color: theme.colors.textTertiary,
+    fontWeight: '700',
+    marginBottom: 10,
+  },
+  guideFactorsDivider: {
+    height: 1,
+    backgroundColor: theme.colors.divider,
+    marginTop: 14,
+    marginBottom: 12,
+  },
+  guideFactorsLabel: {
+    ...theme.typography.small,
+    color: theme.colors.textSecondary,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  guideDots: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 5,
+    marginTop: 2,
+  },
+  guideDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: theme.colors.borderStrong,
+  },
+  guideDotActive: {
+    backgroundColor: theme.colors.primary,
+    width: 12,
+  },
+  miniScrollWrapper: {
+    marginHorizontal: -24,
+  },
+  miniScroll: {
+    paddingHorizontal: 24,
+    paddingVertical: 4,
+    gap: 10,
+  },
+  miniCard: {
+    width: 148,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.l,
+    padding: 14,
     ...theme.shadows.soft,
   },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, gap: 12 },
-  cardIconBox: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
-  cardTitle: { color: theme.colors.textPrimary, flex: 1 },
-  confidenceBadge: { backgroundColor: theme.colors.surfaceSoft, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 100 },
-  confidenceText: { color: theme.colors.textSecondary },
-  
-  actionBox: {
-    backgroundColor: '#F7F8FC', // Very soft blue tint
-    padding: 16,
-    borderRadius: 16,
+  miniCardTrade: {
+    ...theme.typography.small,
+    color: theme.colors.primary,
+    fontWeight: '700',
+  },
+  miniCardTitle: {
+    ...theme.typography.small,
+    color: theme.colors.textSecondary,
+    marginTop: 4,
+    lineHeight: 16,
+  },
+  miniCardPrice: {
+    ...theme.typography.caption,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
+    marginTop: 8,
+  },
+  guideEyebrow: {
+    ...theme.typography.small,
+    color: theme.colors.primary,
+    fontWeight: '700',
+  },
+  guideTitle: {
+    ...theme.typography.caption,
+    color: theme.colors.textSecondary,
+    marginTop: 6,
+  },
+  guidePriceRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 8,
+    marginTop: 12,
+  },
+  guidePriceLabel: {
+    ...theme.typography.small,
+    color: theme.colors.textTertiary,
+  },
+  guidePriceValue: {
+    fontSize: 24,
+    fontWeight: '800',
+    letterSpacing: -0.6,
+    color: theme.colors.primary,
+  },
+  cardHeader: {
+    ...theme.typography.bodyStrong,
+    color: theme.colors.textPrimary,
+  },
+  cardDesc: {
+    ...theme.typography.caption,
+    color: theme.colors.textSecondary,
+    marginTop: 6,
+  },
+  disclaimerText: {
+    ...theme.typography.small,
+    color: theme.colors.textTertiary,
+    textAlign: 'center',
+    marginTop: 14,
+    paddingHorizontal: 14,
+    lineHeight: 17,
+    fontWeight: '500',
+  },
+
+  // Premium Cost Card
+  costCard: {
+    backgroundColor: theme.colors.premiumDark,
+    borderRadius: theme.borderRadius.xxxl,
+    padding: 24,
+    ...theme.shadows.medium,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  costCircle: {
+    position: 'absolute',
+    top: -34,
+    right: -24,
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: 'rgba(91,108,255,0.45)',
+  },
+  costImage: {
+    position: 'absolute',
+    right: -10,
+    top: '50%',
+    marginTop: -52, // half of height 104
+    width: 104,
+    height: 104,
+    resizeMode: 'contain',
+    zIndex: 0,
+  },
+  costContent: {
+    position: 'relative',
+    zIndex: 1,
+    paddingRight: 80,
+  },
+  costHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  costIconWrap: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,179,138,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  costEyebrow: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: theme.colors.accent,
+  },
+  costPrice: {
+    fontSize: 30,
+    fontWeight: '800',
+    letterSpacing: -0.8,
+    color: '#FFF',
+    marginTop: 14,
+  },
+  costDesc: {
+    ...theme.typography.caption,
+    marginTop: 8,
+    color: theme.colors.onDarkSoft,
+  },
+
+  badgeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 14,
+  },
+
+  cardIconHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  recommendationWrap: {
     borderLeftWidth: 3,
     borderLeftColor: theme.colors.primary,
+    paddingLeft: 14,
   },
-  actionCardBody: { color: theme.colors.textPrimary, lineHeight: 26 },
+  recommendationText: {
+    ...theme.typography.body,
+    color: theme.colors.textPrimary,
+    lineHeight: 24,
+  },
 
-  warningCard: { backgroundColor: theme.colors.white, borderWidth: 1, borderColor: '#FFEBEA' },
-  warningText: { color: theme.colors.textPrimary, lineHeight: 26 },
+  listItem: {
+    flexDirection: 'row',
+    gap: 11,
+    marginBottom: 12,
+  },
+  listText: {
+    ...theme.typography.body,
+    color: theme.colors.textSecondary,
+    lineHeight: 23,
+    flex: 1,
+  },
 
-  bulletList: { gap: 14 },
-  bulletRow: { flexDirection: 'row', alignItems: 'flex-start' },
-  bulletDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: theme.colors.primary, marginTop: 8, marginRight: 12 },
-  bulletText: { flex: 1, color: theme.colors.textSecondary, lineHeight: 24 },
+  warningCard: {
+    marginTop: 12,
+    backgroundColor: theme.colors.warningLight,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  warningCardTitle: {
+    ...theme.typography.h3,
+    color: '#9A6E13',
+  },
+  warningDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: '#C77F12',
+    marginTop: 9,
+  },
+  warningListText: {
+    ...theme.typography.body,
+    color: '#7A5A1E',
+    lineHeight: 23,
+    flex: 1,
+  },
 
-  disclaimer: { color: theme.colors.textTertiary, textAlign: 'center', marginTop: 40, paddingHorizontal: 24, lineHeight: 20 },
+  stepItem: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 12,
+  },
+  stepNumber: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: theme.colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  stepNumberText: {
+    color: theme.colors.primary,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  dangerBox: {
+    marginTop: 6,
+    paddingVertical: 13,
+    paddingHorizontal: 15,
+    backgroundColor: theme.colors.dangerLight,
+    borderRadius: theme.borderRadius.l,
+  },
+  dangerBoxTitle: {
+    ...theme.typography.small,
+    color: theme.colors.danger,
+    fontWeight: '700',
+    marginBottom: 7,
+  },
+  dangerBoxText: {
+    ...theme.typography.caption,
+    color: '#B3271F',
+    lineHeight: 19,
+  },
 
-  footer: { 
-    position: 'absolute', bottom: 0, left: 0, right: 0, 
-    paddingHorizontal: theme.spacing.xl, paddingTop: 16, paddingBottom: 40, 
-    backgroundColor: theme.colors.background, 
+  bottomDisclaimer: {
+    ...theme.typography.small,
+    color: theme.colors.textTertiary,
+    textAlign: 'center',
+    marginTop: 18,
+    paddingHorizontal: 8,
+    lineHeight: 18,
+    fontWeight: '500',
+  },
+
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    paddingBottom: 34,
+    backgroundColor: theme.colors.background,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.03)',
   },
 });

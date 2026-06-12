@@ -42,3 +42,6 @@ app-example
 # generated native folders
 /ios
 /android
+
+# reference archives (extracted copy is tracked in ref/prototype/)
+ref/prototype.zip

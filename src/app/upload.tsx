@@ -1,218 +1,299 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Image } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Button } from '../components/Button';
-import { Chip } from '../components/Chip';
-import { useRequestFlow } from '../hooks/useRequestFlow';
+import { View, Text, StyleSheet, ScrollView, Image } from 'react-native';
+import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import { useRequest } from '../context/RequestContext';
+import { useRequestFlow, MAX_PHOTOS } from '../hooks/useRequestFlow';
 import { theme } from '../theme';
+import { Chip } from '../components/Chip';
+import { Button } from '../components/Button';
+import { AppHeader } from '../components/Header';
+import { ASSET, LOCATIONS, SYMPTOMS } from '../data/mockData';
+import { PressableScale } from '../components/ui/PressableScale';
+
+function StepIndicator({ current, total, label }: { current: number, total: number, label: string }) {
+  return (
+    <View style={styles.stepIndicator}>
+      <Text style={styles.stepTitle}>{label}</Text>
+      <Text style={styles.stepCount}>{current} <Text style={{ color: theme.colors.textTertiary }}>/ {total}</Text></Text>
+    </View>
+  );
+}
 
 export default function UploadScreen() {
   const {
-    imageUris,
-    location,
-    symptom,
-    locationOptions,
-    symptomOptions,
-    canProceed,
-    remainingImageSlots,
-    handlePickImages,
-    handleRemoveImage,
-    handleSelectLocation,
-    handleSelectSymptom,
-    handleStartAnalysis,
-  } = useRequestFlow();
+    setLocation, setSymptom, setImageUris, setImageBase64s, submitAnalysis,
+    location, symptom, imageUris
+  } = useRequest();
+  // 사진 추가(촬영/앨범) 로직은 홈 CTA/FAB와 공유하는 useRequestFlow 훅이 담당한다.
+  // 이전 요청 초기화는 홈/FAB의 startNewRequest 시점에 수행되므로 여기서는 하지 않는다.
+  const { addPhotos } = useRequestFlow();
+
+  const photoCount = imageUris.length;
+  const done = [photoCount > 0, !!location, !!symptom].filter(Boolean).length;
+  const remaining = 3 - done;
+  const canProceed = remaining === 0;
+
+  const handleAddPhotos = () => {
+    addPhotos();
+  };
+
+  const handleRemovePhoto = (index: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    setImageUris(prev => prev.filter((_, i) => i !== index));
+    setImageBase64s(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleAnalyze = () => {
+    if (!canProceed) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    // 이전 결과/에러가 남아 있어도 현재 사진·선택 기준으로 새 분석을 시작한다.
+    void submitAnalysis();
+    router.push('/analysis');
+  };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.header}>
-          <Text style={[theme.typography.caption, styles.stepLabel]}>1 / 3 사진 및 증상 등록</Text>
-          <Text style={[theme.typography.display, styles.title]}>사진과 증상을{'\n'}등록해 주세요</Text>
-          <Text style={[theme.typography.body, styles.subtitle]}>
-            문제 부위가 잘 보이는 사진과 기본 정보를 입력하면 요청서 초안을 정리할 수 있어요.
-          </Text>
+    <View style={styles.container}>
+      {/* Header */}
+      <AppHeader title="요청서 작성" onBack={() => router.back()} />
+
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={{ marginBottom: 22 }}>
+          <StepIndicator current={1} total={2} label="요청서 작성" />
         </View>
 
+        {/* Info Card */}
+        <View style={styles.infoCard}>
+          <Image source={ASSET.uploadCamera} style={styles.infoCardImage} />
+          <View style={styles.infoCardTextWrap}>
+            <Text style={styles.infoCardTitle}>사진을 올리면 시작돼요</Text>
+            <Text style={styles.infoCardSubtitle}>문제 부위가 잘 보이게 찍어주세요.</Text>
+          </View>
+        </View>
+
+        {/* Photos Section */}
         <View style={styles.section}>
-          <Text style={[theme.typography.h3, styles.sectionTitle]}>사진 등록</Text>
-          <View style={styles.galleryRow}>
-            {imageUris.map((uri, index) => (
-              <View key={`${uri}-${index}`} style={styles.tile}>
-                <Image source={{ uri }} style={styles.tileImg} />
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.removeButton,
-                    pressed && { transform: [{ scale: theme.motion.pressScale }], opacity: theme.motion.activeOpacity },
-                  ]}
-                  onPress={() => handleRemoveImage(index)}
-                  hitSlop={12}
-                  accessibilityRole="button"
-                  accessibilityLabel="사진 삭제"
-                >
-                  <MaterialCommunityIcons name="close" size={16} color={theme.colors.white} />
-                </Pressable>
+          <View style={styles.sectionHeaderInner}>
+            <Text style={styles.subSectionTitle}>문제 사진</Text>
+            <Text style={styles.subSectionCount}>{photoCount} / {MAX_PHOTOS} · 최대 {MAX_PHOTOS}장</Text>
+          </View>
+          <Text style={styles.subSectionDesc}>다양한 각도로 찍을수록 요청서가 정확해져요.</Text>
+
+          <View style={styles.photoContainer}>
+            {imageUris.map((uri, i) => (
+              <View key={i} style={styles.photoSlot}>
+                <Image source={{ uri }} style={styles.photoImage} />
+                <PressableScale style={styles.removePhotoBtn} onPress={() => handleRemovePhoto(i)} hitSlop={10}>
+                  <Ionicons name="close-circle" size={24} color="rgba(0,0,0,0.6)" />
+                </PressableScale>
               </View>
             ))}
-
-            {remainingImageSlots > 0 && (
-              <Pressable
-                onPress={handlePickImages}
-                accessibilityRole="button"
-                accessibilityLabel="사진 추가"
-                style={({ pressed }) => [
-                  styles.addTile,
-                  pressed && { transform: [{ scale: theme.motion.pressScale }], opacity: theme.motion.activeOpacity },
-                ]}
-              >
-                <MaterialCommunityIcons
-                  name="camera-plus-outline"
-                  size={28}
-                  color={theme.colors.primary}
-                  style={{ marginBottom: 8 }}
-                />
-                <Text style={[theme.typography.bodyStrong, styles.addLabel]}>사진 추가</Text>
-                <Text style={[theme.typography.small, styles.addCount]}>{imageUris.length} / 3</Text>
-              </Pressable>
+            {photoCount < MAX_PHOTOS && (
+              <PressableScale style={styles.addPhotoBtn} onPress={handleAddPhotos}>
+                <View style={styles.addPhotoIconWrapper}>
+                  <Ionicons name="camera" size={24} color={theme.colors.textSecondary} />
+                </View>
+                <Text style={styles.addPhotoText}>사진 추가</Text>
+              </PressableScale>
             )}
           </View>
-          <Text style={[theme.typography.caption, styles.helper]}>최대 3장까지 등록할 수 있어요.</Text>
         </View>
 
+        {/* Location Section */}
         <View style={styles.section}>
-          <Text style={[theme.typography.h3, styles.sectionTitle]}>위치 선택</Text>
-          <View style={styles.chipRow}>
-            {locationOptions.map((loc) => (
+          <Text style={styles.subSectionTitle}>어디서 발생했나요?</Text>
+          <View style={styles.chipContainer}>
+            {LOCATIONS.map((loc) => (
               <Chip
                 key={loc}
                 label={loc}
                 selected={location === loc}
-                onPress={() => handleSelectLocation(loc)}
+                onPress={() => setLocation(location === loc ? '' : loc)}
               />
             ))}
           </View>
         </View>
 
+        {/* Symptom Section */}
         <View style={styles.section}>
-          <Text style={[theme.typography.h3, styles.sectionTitle]}>증상 선택</Text>
-          <View style={styles.chipRow}>
-            {symptomOptions.map((sym) => (
+          <Text style={styles.subSectionTitle}>어떤 증상인가요?</Text>
+          <View style={styles.chipContainer}>
+            {SYMPTOMS.map((sym) => (
               <Chip
                 key={sym}
                 label={sym}
                 selected={symptom === sym}
-                onPress={() => handleSelectSymptom(sym)}
+                onPress={() => setSymptom(symptom === sym ? '' : sym)}
               />
             ))}
           </View>
         </View>
+
       </ScrollView>
 
+      {/* Floating Footer */}
       <View style={styles.footer}>
         {!canProceed && (
-          <Text style={[theme.typography.caption, styles.footerHelper]}>
-            사진, 위치, 증상을 모두 입력하면 다음 단계로 이동할 수 있어요.
+          <Text style={styles.footerHint}>
+            {[
+              photoCount === 0 && '사진',
+              !location && '위치',
+              !symptom && '증상',
+            ].filter(Boolean).join(' · ')}을(를) 선택하면 요청서 정리를 시작할 수 있어요
           </Text>
         )}
         <Button
           title="AI 요청서 정리 시작"
-          onPress={handleStartAnalysis}
           disabled={!canProceed}
-          accessibilityLabel="AI 요청서 정리 시작"
+          onPress={handleAnalyze}
+          leftIcon={<Ionicons name="sparkles" size={20} color="#FFF" />}
         />
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
-const TILE_SIZE = 110;
-
 const styles = StyleSheet.create({
-  safeArea: {
+  container: {
     flex: 1,
     backgroundColor: theme.colors.background,
   },
-  scroll: { flex: 1 },
+  scroll: {
+    flex: 1,
+  },
   scrollContent: {
-    padding: theme.spacing.xl,
-    paddingBottom: 160,
+    paddingHorizontal: 24,
+    paddingTop: 10,
+    paddingBottom: 150,
   },
-
-  header: { marginBottom: theme.spacing.xl, marginTop: theme.spacing.l },
-  stepLabel: { color: theme.colors.primary, marginBottom: theme.spacing.s },
-  title: { color: theme.colors.textPrimary, marginBottom: theme.spacing.m, lineHeight: 40 },
-  subtitle: { color: theme.colors.textSecondary },
-
-  section: { marginTop: theme.spacing.xl },
-  sectionTitle: { color: theme.colors.textPrimary, marginBottom: theme.spacing.l },
-
-  galleryRow: {
+  stepIndicator: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: theme.spacing.l,
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  tile: {
-    width: TILE_SIZE,
-    height: TILE_SIZE,
-    borderRadius: theme.borderRadius.xl,
-    overflow: 'hidden',
-    position: 'relative',
-    backgroundColor: theme.colors.surfaceMuted,
+  stepTitle: {
+    ...theme.typography.caption,
+    color: theme.colors.textPrimary,
+    fontWeight: '700',
+  },
+  stepCount: {
+    ...theme.typography.caption,
+    color: theme.colors.textPrimary,
+    fontWeight: '500',
+  },
+  infoCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.xxl,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 28,
     ...theme.shadows.soft,
   },
-  tileImg: { width: '100%', height: '100%', resizeMode: 'cover' },
-  removeButton: {
+  infoCardImage: {
+    width: 60,
+    height: 60,
+    resizeMode: 'contain',
+  },
+  infoCardTextWrap: {
+    flex: 1,
+  },
+  infoCardTitle: {
+    ...theme.typography.bodyStrong,
+    color: theme.colors.textPrimary,
+  },
+  infoCardSubtitle: {
+    ...theme.typography.caption,
+    color: theme.colors.textSecondary,
+    marginTop: 3,
+  },
+  section: {
+    marginBottom: 30,
+  },
+  sectionHeaderInner: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    marginBottom: 6,
+  },
+  subSectionTitle: {
+    ...theme.typography.h3,
+    color: theme.colors.textPrimary,
+    marginBottom: 14,
+  },
+  subSectionCount: {
+    ...theme.typography.small,
+    color: theme.colors.textTertiary,
+  },
+  subSectionDesc: {
+    ...theme.typography.caption,
+    color: theme.colors.textSecondary,
+    marginBottom: 14,
+  },
+  photoContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  photoSlot: {
+    width: 106,
+    height: 106,
+    borderRadius: 16,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  photoImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  removePhotoBtn: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    top: 6,
+    right: 6,
+    backgroundColor: 'rgba(255,255,255,0.8)',
+    borderRadius: 12,
+  },
+  addPhotoBtn: {
+    width: 106,
+    height: 106,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.04)',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
   },
-  addTile: {
-    width: TILE_SIZE,
-    height: TILE_SIZE,
-    backgroundColor: theme.colors.primaryLight,
-    borderRadius: theme.borderRadius.xl,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'transparent',
+  addPhotoIconWrapper: {
+    marginBottom: 6,
+    opacity: 0.6,
   },
-  addLabel: { color: theme.colors.primaryDark },
-  addCount: { color: theme.colors.primary, marginTop: 2, opacity: 0.8 },
-  helper: { color: theme.colors.textTertiary, marginTop: theme.spacing.m },
-
-  chipRow: {
+  addPhotoText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: theme.colors.textSecondary,
+  },
+  chipContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
   },
-
   footer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    paddingHorizontal: theme.spacing.xl,
-    paddingTop: theme.spacing.l,
-    paddingBottom: theme.spacing.xxl,
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 34,
     backgroundColor: theme.colors.background,
     borderTopWidth: 1,
-    borderTopColor: theme.colors.divider,
+    borderTopColor: 'rgba(0,0,0,0.03)',
   },
-  footerHelper: {
+  footerHint: {
+    ...theme.typography.caption,
     color: theme.colors.textTertiary,
     textAlign: 'center',
-    marginBottom: theme.spacing.m,
+    marginBottom: 12,
   },
 });

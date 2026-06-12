@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pressable, Text, StyleSheet } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { theme } from '../theme';
 
 interface ChipProps {
@@ -9,11 +10,16 @@ interface ChipProps {
 }
 
 export const Chip = ({ label, selected, onPress }: ChipProps) => {
+  const handlePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    if (onPress) onPress();
+  };
+
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected: !!selected }}
-      onPress={onPress}
+      onPress={handlePress}
       style={({ pressed }) => [
         styles.base,
         selected ? styles.selected : styles.idle,

@@ -1,215 +1,393 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image } from 'react-native';
 import { router } from 'expo-router';
-import { mockExpertResponses } from '../data/mockData';
+import { buildExperts, ASSET } from '../data/mockData';
 import { theme } from '../theme';
 import { useRequest } from '../context/RequestContext';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { TrustBadge } from '../components/ui/TrustBadge';
+import { Ionicons } from '@expo/vector-icons';
+import { Card } from '../components/Card';
+import { AppHeader } from '../components/Header';
+import { Skeleton } from '../components/Skeleton';
+import { getAvailabilityColor, getAvailabilityBg } from '../utils/expertDisplay';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function ExpertResponsesScreen() {
-  const { setSelectedExpertId } = useRequest();
+  const { setSelectedExpertId, analysisResult } = useRequest();
+  const [loading, setLoading] = useState(true);
+  // 분석 결과의 공종(tradeCategory)을 반영해 전문가 응답을 구성한다.
+  const experts = useMemo(() => buildExperts(analysisResult), [analysisResult]);
+  const maxRating = experts.reduce((m: number, e: any) => Math.max(m, e.rating), 0);
+
+  useEffect(() => {
+    const t = setTimeout(() => setLoading(false), 1600);
+    return () => clearTimeout(t);
+  }, []);
 
   const handleSelect = (id: string) => {
     setSelectedExpertId(id);
     router.push(`/expert/${id}`);
   };
 
-  if (mockExpertResponses.length === 0) {
-    return (
-      <SafeAreaView style={styles.container} edges={['bottom']}>
-        <View style={styles.emptyState}>
-          <MaterialCommunityIcons name="inbox-remove-outline" size={48} color={theme.colors.textTertiary} />
-          <Text style={[theme.typography.h2, styles.emptyTitle]}>아직 도착한 전문가 응답이 없어요</Text>
-          <Text style={[theme.typography.body, styles.emptyDesc]}>요청서를 보낸 뒤 전문가 응답이 도착하면 이곳에서 비교할 수 있어요.</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <View style={styles.container}>
+      <AppHeader title="전문가 응답 비교" onBack={() => router.back()} />
+
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <Text style={[theme.typography.display, styles.title]}>응답 비교</Text>
-          <Text style={[theme.typography.body, styles.subtitle]}>
-            작업 방식, 방문 필요 여부, 사후관리 조건을 함께 확인해 주세요.
-          </Text>
-        </View>
-
-        <View style={styles.list}>
-          {mockExpertResponses.map((expert) => (
-            <Pressable
-              key={expert.id}
-              style={({ pressed }) => [
-                styles.card,
-                pressed && { transform: [{ scale: theme.motion.pressScale }], opacity: theme.motion.activeOpacity },
-              ]}
-              onPress={() => handleSelect(expert.id)}
-              accessibilityRole="button"
-              accessibilityLabel={`${expert.expertName} 상세 조건 보기`}
-            >
-              <View style={styles.cardHeader}>
-                <View style={styles.expertProfileWrap}>
-                  <View style={styles.expertAvatar}>
-                    <MaterialCommunityIcons name="account" size={24} color={theme.colors.textTertiary} />
-                  </View>
-                  <Text style={[theme.typography.h2, styles.expertName]}>{expert.expertName}</Text>
-                </View>
-                <TrustBadge type={expert.warranty.type} size="sm" />
-              </View>
-
-              <View style={styles.commentBox}>
-                <Text style={[theme.typography.body, styles.comment]} numberOfLines={3}>
-                  {`"${expert.comment}"`}
-                </Text>
-              </View>
-
-              <View style={styles.infoTable}>
-                <View style={styles.infoRow}>
-                  <Text style={[theme.typography.body, styles.infoLabel]}>작업 방식</Text>
-                  <Text style={[theme.typography.bodyStrong, styles.infoValue]}>{expert.workType}</Text>
-                </View>
-                <View style={styles.infoRow}>
-                  <Text style={[theme.typography.body, styles.infoLabel]}>비용 감각</Text>
-                  <Text style={[theme.typography.bodyStrong, styles.infoValue]}>{expert.costLevel}</Text>
-                </View>
-                <View style={styles.infoRow}>
-                  <Text style={[theme.typography.body, styles.infoLabel]}>방문 여부</Text>
-                  <Text style={[theme.typography.bodyStrong, styles.infoValue]}>{expert.visitRequired ? '현장 확인 필요' : '사진 기반 확인 가능'}</Text>
-                </View>
-                <View style={[styles.infoRow, { borderBottomWidth: 0, paddingBottom: 0, marginBottom: 0 }]}>
-                  <Text style={[theme.typography.body, styles.infoLabel]}>가능 여부</Text>
-                  <View style={styles.availabilityPill}>
-                     <View style={[styles.availabilityDot, { backgroundColor: expert.available ? theme.colors.success : theme.colors.warning }]} />
-                     <Text style={[theme.typography.bodyStrong, styles.infoValue]}>
-                       {expert.available ? '작업 가능' : '추가 확인 필요'}
-                     </Text>
+        {loading ? (
+          <View>
+            <Text style={styles.h1}>응답을 모으는 중</Text>
+            <Text style={styles.bodyText}>믿을 수 있는 전문가 3-5명에게 요청을 보내고 있어요.</Text>
+            {[0, 1, 2].map((i) => (
+              <Card key={i} radius={theme.borderRadius.xxl} style={{ marginBottom: 14 }}>
+                <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center', marginBottom: 16 }}>
+                  <Skeleton width={44} height={44} radius={22} />
+                  <View style={{ flex: 1 }}>
+                    <Skeleton width="40%" height={14} style={{ marginBottom: 8 }} />
+                    <Skeleton width="58%" height={12} />
                   </View>
                 </View>
+                <Skeleton width="100%" height={12} style={{ marginBottom: 8 }} />
+                <Skeleton width="78%" height={12} />
+              </Card>
+            ))}
+            <View style={{ alignItems: 'center', marginTop: 8 }}>
+              {/* Spinning loader could go here */}
+            </View>
+          </View>
+        ) : (
+          <View>
+            <View style={styles.heroRow}>
+              <View style={styles.heroTextCol}>
+                <Text style={styles.h1}>전문가 {experts.length}명이 응답했어요</Text>
+                <Text style={styles.bodyText}>작업 방식과 보증 조건을 같은 기준으로 비교해 보세요.</Text>
               </View>
+              <Image source={ASSET.expertCards} style={styles.heroImg} />
+            </View>
 
-              <View style={styles.cardFooter}>
-                <Text style={[theme.typography.bodyStrong, styles.footerText]}>상세 조건 보기</Text>
-                <View style={styles.footerIconWrap}>
-                  <MaterialCommunityIcons name="chevron-right" size={18} color={theme.colors.white} />
-                </View>
+            <View style={styles.filterRow}>
+              <View style={styles.filterChip}>
+                <Ionicons name="sparkles" size={13} color={theme.colors.primary} />
+                <Text style={styles.filterChipText}>정렬 · 추천순</Text>
               </View>
-            </Pressable>
-          ))}
-        </View>
-        <View style={{ height: 60 }} />
+              <Text style={styles.filterHint}>모두 같은 요청서 기준</Text>
+            </View>
+
+            {experts.map((ex: any) => {
+              const isTop = ex.rating >= maxRating;
+              const hasWarranty = ex.warranty.type !== '없음';
+              const tiles = [
+                ['작업 방식', ex.workType, 'build'],
+                ['비용 감각', ex.costLevel, 'flash'],
+                ['방문 여부', ex.visitRequired ? '방문 확인' : '사진 확인', 'location'],
+              ];
+
+              return (
+                <Card key={ex.id} radius={theme.borderRadius.xxxl} pad={0} style={styles.cardWrapper} onPress={() => handleSelect(ex.id)}>
+                  {/* Head */}
+                    <View style={styles.cardHead}>
+                      <View style={styles.cardHeadRow}>
+                        <View style={styles.avatarWrap}>
+                          {isTop ? (
+                            <LinearGradient colors={['#6E7BFF', theme.colors.primary]} style={styles.avatarGradient}>
+                              <View style={styles.avatarInner}>
+                                <Ionicons name="person" size={24} color={theme.colors.primary} />
+                              </View>
+                            </LinearGradient>
+                          ) : (
+                            <View style={[styles.avatarGradient, { backgroundColor: theme.colors.surfaceSoft }]}>
+                              <View style={styles.avatarInner}>
+                                <Ionicons name="person" size={24} color={theme.colors.primary} />
+                              </View>
+                            </View>
+                          )}
+                        </View>
+                        <View style={styles.nameCol}>
+                          <View style={styles.nameRow}>
+                            <Text style={styles.nameText} numberOfLines={1}>{ex.expertName}</Text>
+                            {isTop && (
+                              <View style={styles.recommendBadge}>
+                                <Text style={styles.recommendBadgeText}>추천</Text>
+                              </View>
+                            )}
+                          </View>
+                          <View style={styles.ratingRow}>
+                            <Ionicons name="star" size={13} color={theme.colors.warning} />
+                            <Text style={styles.ratingText}>{ex.rating}</Text>
+                            <Text style={styles.reviewText}>· 후기 {ex.reviews}</Text>
+                          </View>
+                        </View>
+                        <View style={[styles.availBadge, { backgroundColor: getAvailabilityBg(ex.available) }]}>
+                          <View style={[styles.availDot, { backgroundColor: getAvailabilityColor(ex.available) }]} />
+                          <Text style={[styles.availText, { color: getAvailabilityColor(ex.available) }]}>
+                            {ex.available ? '작업 가능' : '확인 필요'}
+                          </Text>
+                        </View>
+                      </View>
+                      
+                      {/* Comment Bubble */}
+                      <View style={styles.commentBubble}>
+                        <Text style={styles.commentText} numberOfLines={3}>“{ex.comment}”</Text>
+                      </View>
+                    </View>
+
+                    {/* Stat Tiles */}
+                    <View style={styles.statsGrid}>
+                      {tiles.map(([k, v, icon]) => (
+                        <View key={k as string} style={styles.statTile}>
+                          <View style={styles.statTileHeader}>
+                            <Ionicons name={icon as any} size={12} color={theme.colors.textTertiary} />
+                            <Text style={styles.statTileLabel}>{k as string}</Text>
+                          </View>
+                          <Text style={styles.statTileValue}>{v as string}</Text>
+                        </View>
+                      ))}
+                    </View>
+
+                    {/* Warranty Strip */}
+                    <View style={styles.warrantyStrip}>
+                      <Ionicons name="shield-checkmark" size={17} color={hasWarranty ? theme.colors.success : theme.colors.textTertiary} />
+                      <Text style={styles.warrantyText}>
+                        {hasWarranty ? `${ex.warranty.type} · ${ex.warranty.period} 보증` : '사후관리 미제공'}
+                      </Text>
+                      <View style={styles.detailRow}>
+                        <Text style={styles.detailText}>상세 보기</Text>
+                        <Ionicons name="chevron-forward" size={15} color={theme.colors.primary} />
+                      </View>
+                    </View>
+                </Card>
+              );
+            })}
+            
+            <Text style={styles.bottomDisclaimer}>최종 작업 범위와 비용은 전문가 상담 후 결정됩니다.</Text>
+          </View>
+        )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.background },
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
   scroll: { flex: 1 },
-  scrollContent: { padding: theme.spacing.xl },
-  
-  header: { marginBottom: 32, marginTop: 16 },
-  title: { color: theme.colors.black, marginBottom: 12 },
-  subtitle: { color: theme.colors.textSecondary, opacity: 0.9 },
-  
-  list: { gap: 24 },
-  card: {
-    backgroundColor: theme.colors.white,
-    borderRadius: 32,
-    padding: 24,
-    ...theme.shadows.soft,
+  scrollContent: { paddingHorizontal: 24, paddingBottom: 40 },
+
+  h1: {
+    ...theme.typography.h1,
+    color: theme.colors.textPrimary,
   },
-  cardHeader: {
+  bodyText: {
+    ...theme.typography.body,
+    color: theme.colors.textSecondary,
+    marginTop: 6,
+    marginBottom: 24,
+  },
+
+  heroRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    gap: 12,
+    marginBottom: 16,
   },
-  expertProfileWrap: {
+  heroTextCol: {
+    flex: 1,
+  },
+  heroImg: {
+    width: 80,
+    height: 80,
+    resizeMode: 'contain',
+  },
+
+  filterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 18,
+  },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: theme.colors.surfaceSoft,
+    borderRadius: theme.borderRadius.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  filterChipText: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: theme.colors.textSecondary,
+  },
+  filterHint: {
+    fontSize: 12.5,
+    fontWeight: '500',
+    color: theme.colors.textTertiary,
+  },
+
+  cardWrapper: {
+    marginBottom: 16,
+    overflow: 'hidden',
+  },
+  cardHead: {
+    paddingHorizontal: 18,
+    paddingTop: 18,
+  },
+  cardHeadRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
-  expertAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: theme.colors.surfaceSoft,
-    justifyContent: 'center',
-    alignItems: 'center',
+  avatarWrap: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
   },
-  expertName: { color: theme.colors.black },
-  badge: {
+  avatarGradient: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 25,
+    padding: 2,
+  },
+  avatarInner: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 25,
+    backgroundColor: theme.colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  nameCol: {
+    flex: 1,
+  },
+  nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 100,
+    gap: 7,
   },
-  
-  commentBox: {
-    marginBottom: 24,
-    paddingLeft: 16,
-    borderLeftWidth: 3,
-    borderLeftColor: theme.colors.surfaceSoft,
+  nameText: {
+    ...theme.typography.h3,
+    color: theme.colors.textPrimary,
   },
-  comment: {
+  recommendBadge: {
+    backgroundColor: theme.colors.primaryLight,
+    borderRadius: theme.borderRadius.pill,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  recommendBadgeText: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: theme.colors.primary,
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 3,
+  },
+  ratingText: {
+    ...theme.typography.caption,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
+  },
+  reviewText: {
+    ...theme.typography.caption,
+    color: theme.colors.textTertiary,
+  },
+  availBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderRadius: theme.borderRadius.pill,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+  },
+  availDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  availText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  commentBubble: {
+    backgroundColor: theme.colors.surfaceMuted,
+    borderRadius: theme.borderRadius.l,
+    paddingVertical: 13,
+    paddingHorizontal: 15,
+    marginTop: 14,
+  },
+  commentText: {
+    ...theme.typography.body,
     color: theme.colors.textSecondary,
-    fontStyle: 'italic',
-    lineHeight: 24,
+    lineHeight: 23,
   },
-  
-  infoTable: {
-    backgroundColor: theme.colors.surfaceSoft,
-    borderRadius: 24,
-    padding: 20,
-  },
-  infoRow: {
+  statsGrid: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.04)',
-    borderStyle: 'solid',
-  },
-  infoLabel: { width: 90, color: theme.colors.textSecondary },
-  infoValue: { flex: 1, color: theme.colors.black },
-  availabilityPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: 8,
+    paddingHorizontal: 18,
+    paddingTop: 14,
   },
-  availabilityDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+  statTile: {
+    flex: 1,
+    backgroundColor: theme.colors.surfaceSoft,
+    borderRadius: theme.borderRadius.m,
+    paddingVertical: 11,
+    paddingHorizontal: 10,
   },
-  
-  cardFooter: {
+  statTileHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 24,
-    backgroundColor: theme.colors.black,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 100,
+    gap: 4,
+    marginBottom: 6,
   },
-  footerText: {
-    color: theme.colors.white,
+  statTileLabel: {
+    fontSize: 10.5,
+    fontWeight: '600',
+    color: theme.colors.textTertiary,
   },
-  footerIconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
+  statTileValue: {
+    ...theme.typography.caption,
+    color: theme.colors.primary,
+    fontWeight: '700',
+    lineHeight: 17,
+  },
+  warrantyStrip: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 9,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    marginTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.divider,
   },
-
-  emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: theme.spacing.xl },
-  emptyTitle: { color: theme.colors.black, marginTop: theme.spacing.m, marginBottom: theme.spacing.xs },
-  emptyDesc: { color: theme.colors.textSecondary, textAlign: 'center' },
+  warrantyText: {
+    ...theme.typography.caption,
+    color: theme.colors.primary,
+    fontWeight: '700',
+    flex: 1,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  detailText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: theme.colors.primary,
+  },
+  bottomDisclaimer: {
+    ...theme.typography.small,
+    color: theme.colors.textTertiary,
+    textAlign: 'center',
+    marginTop: 6,
+    marginBottom: 12,
+    fontWeight: '500',
+    lineHeight: 17,
+  },
 });

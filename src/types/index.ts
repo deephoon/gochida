@@ -1,3 +1,5 @@
+import type { Dispatch, SetStateAction } from 'react';
+
 export type WarrantyType = '안심 보증서' | '작업 확인서' | '없음';
 
 export interface WarrantyOption {
@@ -23,6 +25,18 @@ export interface ExpertResponse {
   rating?: number;
   schedule?: string;
   trustElements?: string[];
+  /** 응답 근거 (예: 사진 기반 확인 / 현장 실측 필요). */
+  responseBasis?: string;
+  /** 추천순 정렬 시 사용자에게 보여줄 추천 이유. */
+  recommendedReason?: string;
+}
+
+/** 요청서 검토 화면의 완성도 표시용 구조. */
+export interface RequestCompleteness {
+  score: number;
+  completedItems: string[];
+  missingItems: string[];
+  recommendation: string;
 }
 
 export interface AIRepairAnalysis {
@@ -56,6 +70,7 @@ export interface AIRepairAnalysis {
     };
   };
   disclaimer: string;
+  priceGuide?: RepairPriceGuide;
 }
 
 
@@ -72,14 +87,14 @@ export interface RequestState {
 }
 
 export interface RequestContextValue extends RequestState {
-  setImageUris: (uris: string[]) => void;
-  setImageBase64s: (base64s: string[]) => void;
-  addImageUri: (uri: string) => void;
-  removeImageUri: (uri: string) => void;
+  // 함수형 업데이트(prev => next)를 허용하기 위해 useState 디스패처 타입을 그대로 노출한다.
+  setImageUris: Dispatch<SetStateAction<string[]>>;
+  setImageBase64s: Dispatch<SetStateAction<string[]>>;
   setLocation: (location: string) => void;
   setSymptom: (symptom: string) => void;
   setAiDraft: (draft: string) => void;
   setSelectedExpertId: (expertId: string) => void;
+  setAnalysisResult: (result: AIRepairAnalysis | null) => void;
   clearRequest: () => void;
   submitAnalysis: () => Promise<void>;
 }
@@ -92,7 +107,11 @@ export interface RepairPriceGuide {
   averagePrice: string;
   priceRange: string;
   factors: string[];
-  disclaimer: string;
+  disclaimer?: string;
+  /** 추천 점수 계산용 매칭 메타데이터. 로딩 화면의 관련 공종 우선 노출에 사용. */
+  relatedLocations?: string[];
+  relatedSymptoms?: string[];
+  keywords?: string[];
 }
 
 /** expert/[id] 라우트 파라미터. id가 string | string[] | undefined일 수 있음. */

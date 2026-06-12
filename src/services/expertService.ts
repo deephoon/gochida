@@ -22,7 +22,7 @@ export const fetchExpertResponses = async (requestId: string): Promise<ExpertRes
 export const fetchExpertResponseDetail = async (expertId: string): Promise<ExpertResponse | undefined> => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      resolve(mockExpertResponses.find(expert => expert.id === expertId));
+      resolve(mockExpertResponses.find((expert: any) => expert.id === expertId));
     }, 500);
   });
 };

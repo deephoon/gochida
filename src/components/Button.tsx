@@ -9,6 +9,7 @@ import {
   StyleProp,
   ViewStyle,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { theme } from '../theme';
 
 interface ButtonProps extends Omit<PressableProps, 'style' | 'children' | 'disabled'> {
@@ -36,6 +37,14 @@ export const Button = ({
   const sizeStyle = size === 'sm' ? styles.sm : styles.md;
   const isInactive = disabled || isLoading;
 
+  const handlePress = (e: any) => {
+    if (isInactive) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    if (props.onPress) {
+      props.onPress(e);
+    }
+  };
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -53,6 +62,7 @@ export const Button = ({
         style,
       ]}
       {...props}
+      onPress={handlePress}
     >
       {isLoading ? (
         <ActivityIndicator color={variant === 'primary' ? theme.colors.white : theme.colors.primary} />

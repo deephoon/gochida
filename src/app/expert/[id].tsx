@@ -1,292 +1,368 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Alert, Image } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { mockExpertResponses } from '../../data/mockData';
+import { Ionicons } from '@expo/vector-icons';
+import { buildExperts, ASSET } from '../../data/mockData';
 import { Button } from '../../components/Button';
-import { TrustBadge } from '../../components/ui/TrustBadge';
+import { Card } from '../../components/Card';
+import { AppHeader } from '../../components/Header';
+import { Skeleton } from '../../components/Skeleton';
+import { getAvailabilityColor } from '../../utils/expertDisplay';
+import { useRequest } from '../../context/RequestContext';
 import { theme } from '../../theme';
 import type { ExpertDetailRouteParams } from '../../types';
 
 export default function ExpertDetailScreen() {
   const { id } = useLocalSearchParams() as ExpertDetailRouteParams;
   const rawId = Array.isArray(id) ? id[0] : id;
+  const [loading, setLoading] = useState(true);
+  const { analysisResult } = useRequest();
 
-  const expert = mockExpertResponses.find((item) => item.id === rawId);
+  const ex = buildExperts(analysisResult).find((item: any) => item.id === rawId);
 
-  if (!expert) {
+  useEffect(() => {
+    setLoading(true);
+    const t = setTimeout(() => setLoading(false), 600);
+    return () => clearTimeout(t);
+  }, [rawId]);
+
+  if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={['bottom']}>
-        <View style={styles.emptyState}>
-          <MaterialCommunityIcons name="account-search-outline" size={48} color={theme.colors.textTertiary} />
-          <Text style={[theme.typography.h2, styles.emptyTitle]}>전문가 정보를 찾을 수 없어요</Text>
-          <Text style={[theme.typography.body, styles.emptyDesc]}>응답 목록으로 돌아가 다시 선택해 주세요.</Text>
-          <Button title="응답 목록으로 돌아가기" onPress={() => router.replace('/expert-responses')} style={{ marginTop: 24 }} />
+      <View style={styles.container}>
+        <AppHeader title="전문가 상세" onBack={() => router.back()} />
+        <View style={{ flex: 1, paddingHorizontal: 24, paddingTop: 16 }}>
+          <Skeleton width="50%" height={22} style={{ marginBottom: 16 }} />
+          <Skeleton width="100%" height={14} style={{ marginBottom: 10 }} />
+          <Skeleton width="84%" height={14} style={{ marginBottom: 28 }} />
+          <Skeleton width="100%" height={150} radius={24} />
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
+  // 존재하지 않는 id로 진입한 경우 스켈레톤에 머물지 않고 안내 후 돌아갈 수 있게 한다.
+  if (!ex) {
+    return (
+      <View style={styles.container}>
+        <AppHeader title="전문가 상세" onBack={() => router.back()} />
+        <View style={styles.notFoundWrap}>
+          <View style={styles.notFoundIconWrap}>
+            <Ionicons name="person-outline" size={32} color={theme.colors.textTertiary} />
+          </View>
+          <Text style={styles.notFoundTitle}>전문가 정보를 찾을 수 없어요</Text>
+          <Text style={styles.notFoundDesc}>응답 목록에서 전문가를 다시 선택해 주세요.</Text>
+          <View style={{ alignSelf: 'stretch', marginTop: 28 }}>
+            <Button title="응답 목록으로 돌아가기" onPress={() => router.back()} />
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  const detail = [
+    ['가능 여부', ex.availableLabel, getAvailabilityColor(ex.available)],
+    ['작업 방식', ex.workType, theme.colors.textPrimary],
+    ['예상 비용', ex.costLevel, theme.colors.textPrimary],
+    ['방문 필요', ex.visitLabel, theme.colors.textPrimary],
+    ['가능 일정', ex.schedule, theme.colors.textPrimary],
+  ];
+
   const handleRequest = () => {
-    Alert.alert('데모 안내', '데모 버전에서는 여기까지 지원됩니다.');
+    Alert.alert('MVP 범위 외 기능입니다.', '실제 서비스에서는 전문가와 채팅/통화로 연결됩니다.');
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <View style={styles.container}>
+      <AppHeader title="전문가 상세" onBack={() => router.back()} />
+
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
-        <View style={styles.header}>
-          <View style={styles.expertAvatarLg}>
-             <MaterialCommunityIcons name="account" size={40} color={theme.colors.textSecondary} />
+        {/* Profile */}
+        <View style={styles.profileRow}>
+          <View style={styles.avatarWrap}>
+            <Ionicons name="person" size={28} color={theme.colors.primary} />
           </View>
-          <View>
-            <Text style={[theme.typography.body, styles.subtitle]}>상세 조건 확인</Text>
-            <Text style={[theme.typography.display, styles.expertName]}>{expert.expertName}</Text>
+          <View style={styles.profileInfo}>
+            <Text style={styles.h1} numberOfLines={1}>{ex.expertName}</Text>
+            <View style={styles.ratingRow}>
+              <Ionicons name="star" size={14} color={theme.colors.warning} />
+              <Text style={styles.ratingText}>{ex.rating}</Text>
+              <Text style={styles.reviewText}>· 후기 {ex.reviews}개</Text>
+            </View>
           </View>
         </View>
 
-        <View style={styles.card}>
-          <View style={styles.sectionHeader}>
-            <Text style={[theme.typography.h2, styles.sectionTitle]}>작업 상세 정보</Text>
+        {/* Trust Elements */}
+        <View style={styles.trustWrap}>
+          {ex.trustElements.map((t: string) => (
+            <View key={t} style={styles.trustChip}>
+              <Text style={styles.trustChipText}>{t}</Text>
+            </View>
+          ))}
+        </View>
+
+        {/* Comment */}
+        <Card radius={theme.borderRadius.xxl} style={{ marginTop: 22 }}>
+          <Text style={styles.commentLabel}>전문가 소견</Text>
+          <Text style={styles.commentText}>“{ex.comment}”</Text>
+        </Card>
+
+        {/* Detail Table */}
+        <Card radius={theme.borderRadius.xxl} style={{ paddingVertical: 6, paddingHorizontal: 22, marginTop: 12 }}>
+          {detail.map(([k, v, c], i) => (
+            <View key={k as string} style={[styles.detailRow, i < detail.length - 1 && styles.detailBorder]}>
+              <Text style={styles.detailKey}>{k as string}</Text>
+              <View style={styles.detailValWrap}>
+                {i === 0 && <View style={[styles.detailDot, { backgroundColor: c as string }]} />}
+                <Text style={[styles.detailVal, { color: c as string }]}>{v as string}</Text>
+              </View>
+            </View>
+          ))}
+        </Card>
+
+        {/* Warranty info */}
+        <Card radius={theme.borderRadius.xxl} style={{ paddingVertical: 6, paddingHorizontal: 22, marginTop: 12 }}>
+          <View style={styles.warrantyHeader}>
+            <View style={[styles.warrantyIconWrap, { backgroundColor: ex.warranty.available ? theme.colors.successLight : theme.colors.surfaceSoft }]}>
+              {ex.warranty.available ? (
+                <Image source={ASSET.warranty} style={styles.warrantyImg} />
+              ) : (
+                <Ionicons name="shield-checkmark" size={20} color={theme.colors.textTertiary} />
+              )}
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.h3}>{ex.warranty.type === '없음' ? '사후관리 미제공' : ex.warranty.type}</Text>
+              {ex.warranty.period && <Text style={styles.warrantyPeriod}>보증 기간 {ex.warranty.period}</Text>}
+            </View>
           </View>
           
-          <View style={styles.infoTable}>
-            <View style={styles.infoRow}>
-              <Text style={[theme.typography.body, styles.infoLabel]}>작업 가능 여부</Text>
-              <View style={styles.availabilityPill}>
-                 <View style={[styles.availabilityDot, { backgroundColor: expert.available ? theme.colors.success : theme.colors.warning }]} />
-                 <Text style={[theme.typography.bodyStrong, styles.infoValue]}>
-                   {expert.available ? '작업 가능' : '추가 확인 필요'}
-                 </Text>
-              </View>
-            </View>
-            <View style={styles.infoRow}>
-              <Text style={[theme.typography.body, styles.infoLabel]}>작업 방식</Text>
-              <Text style={[theme.typography.bodyStrong, styles.infoValue]}>{expert.workType}</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Text style={[theme.typography.body, styles.infoLabel]}>비용 감각</Text>
-              <Text style={[theme.typography.bodyStrong, styles.infoValue]}>{expert.costLevel}</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Text style={[theme.typography.body, styles.infoLabel]}>방문 필요 여부</Text>
-              <Text style={[theme.typography.bodyStrong, styles.infoValue]}>{expert.visitRequired ? '방문 필요' : '사진 기반 확인 가능'}</Text>
-            </View>
-            <View style={[styles.infoRow, { borderBottomWidth: 0, paddingBottom: 0, flexDirection: 'column', alignItems: 'flex-start' }]}>
-              <Text style={[theme.typography.body, styles.infoLabel, { marginBottom: 16 }]}>전문가 의견</Text>
-              <View style={styles.commentBox}>
-                <Text style={[theme.typography.body, styles.commentText]}>{`"${expert.comment}"`}</Text>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* 작업 확인서: 실제 확인서처럼 보이도록 dashed border + 원형 체크마크 */}
-        <View style={styles.warrantySection}>
-          <View style={styles.warrantyHeader}>
-            <MaterialCommunityIcons name="shield-star" size={26} color={theme.colors.textPrimary} />
-            <Text style={[theme.typography.h2, styles.sectionTitle, { marginBottom: 0 }]}>
-              작업 확인서 및 사후관리 조건
-            </Text>
-          </View>
-
-          <Text style={[theme.typography.body, styles.warrantyDesc]}>
-            작업 범위와 사후관리 조건을 구조화해 사용자가 비교할 수 있도록 정리한 정보입니다.
+          <Text style={[styles.warrantyDesc, { marginBottom: ex.warranty.includedCare.length ? 14 : 0 }]}>
+            {ex.warranty.description}
           </Text>
 
-          <View style={styles.certBadgeRow}>
-            <View style={styles.certCheck}>
-              <MaterialCommunityIcons name="check" size={20} color={theme.colors.white} />
+          {ex.warranty.includedCare.map((c: string) => (
+            <View key={c} style={styles.careRow}>
+              <Ionicons name="checkmark" size={16} color={theme.colors.success} />
+              <Text style={styles.careText}>{c}</Text>
             </View>
-            <TrustBadge type={expert.warranty.type} size="lg" />
-          </View>
+          ))}
 
-          <View style={styles.careList}>
-            {expert.warranty.includedCare.length > 0 ? (
-              expert.warranty.includedCare.map((care, i) => (
-                <View key={i} style={styles.careItem}>
-                  <MaterialCommunityIcons name="check-circle" size={20} color={theme.colors.black} style={styles.bulletIcon} />
-                  <Text style={[theme.typography.bodyStrong, styles.careText]}>{care}</Text>
-                </View>
-              ))
-            ) : (
-              <Text style={[theme.typography.body, styles.emptyCare]}>등록된 사후관리 조건이 없습니다.</Text>
-            )}
-          </View>
-
-          <View style={styles.legalNoticeBox}>
-            <MaterialCommunityIcons name="information" size={16} color={theme.colors.textTertiary} />
-            <Text style={[theme.typography.small, styles.legalNotice]}>
-              본 확인서는 구조화된 작업 이력 데이터이며, 법적 책임은 전문가 제시 기준에 따릅니다.
+          <View style={styles.disclaimerBox}>
+            <Text style={styles.disclaimerText}>
+              보증 조건과 책임 범위는 전문가와 직접 협의 후 확정됩니다. 고치다는 중개 정보를 제공하며 시공 결과에 직접 책임지지 않습니다.
             </Text>
           </View>
-        </View>
+        </Card>
 
-        <View style={{ height: 120 }} />
       </ScrollView>
 
-      <View style={styles.floatingFooter}>
+      <View style={styles.footer}>
         <Button 
-          title="이 전문가에게 의뢰하기" 
+          title="이 전문가와 상담하기" 
           onPress={handleRequest} 
-          variant="primary" 
-          style={styles.floatingButton}
+          leftIcon={<Ionicons name="chatbubble" size={18} color="#FFF" />}
         />
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.background },
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
   scroll: { flex: 1 },
-  scrollContent: { padding: theme.spacing.xl, paddingBottom: 40 },
-  
-  header: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    marginBottom: 32, 
-    marginTop: 16,
-    gap: 16
-  },
-  expertAvatarLg: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: theme.colors.surfaceSoft,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  expertName: { color: theme.colors.black },
-  subtitle: { color: theme.colors.textSecondary },
+  scrollContent: { paddingHorizontal: 24, paddingBottom: 150, paddingTop: 16 },
 
-  card: {
-    backgroundColor: theme.colors.white,
-    padding: 24,
-    borderRadius: 32,
-    marginBottom: 24,
-    ...theme.shadows.soft,
+  notFoundWrap: {
+    flex: 1,
+    alignItems: 'center',
+    paddingTop: 90,
+    paddingHorizontal: 32,
   },
-  sectionHeader: { marginBottom: 24 },
-  sectionTitle: { color: theme.colors.black },
-  
-  infoTable: { },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.04)',
-    borderStyle: 'solid',
+  notFoundIconWrap: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: theme.colors.surfaceSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
   },
-  infoLabel: { width: 120, color: theme.colors.textSecondary },
-  infoValue: { flex: 1, color: theme.colors.black },
-  
-  availabilityPill: {
+  notFoundTitle: {
+    ...theme.typography.h2,
+    color: theme.colors.textPrimary,
+    textAlign: 'center',
+  },
+  notFoundDesc: {
+    ...theme.typography.body,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+    marginTop: 8,
+  },
+
+  h1: {
+    ...theme.typography.h1,
+    color: theme.colors.textPrimary,
+  },
+  h3: {
+    ...theme.typography.h3,
+    color: theme.colors.textPrimary,
+  },
+
+  profileRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 14,
   },
-  availabilityDot: {
+  avatarWrap: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: theme.colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  profileInfo: {
+    flex: 1,
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+  },
+  ratingText: {
+    ...theme.typography.bodyStrong,
+    color: theme.colors.textPrimary,
+  },
+  reviewText: {
+    ...theme.typography.caption,
+    color: theme.colors.textTertiary,
+  },
+
+  trustWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 16,
+  },
+  trustChip: {
+    backgroundColor: theme.colors.surfaceSoft,
+    borderRadius: theme.borderRadius.pill,
+    paddingHorizontal: 13,
+    paddingVertical: 7,
+  },
+  trustChipText: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: theme.colors.textSecondary,
+  },
+
+  commentLabel: {
+    ...theme.typography.caption,
+    color: theme.colors.textTertiary,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  commentText: {
+    ...theme.typography.body,
+    color: theme.colors.textPrimary,
+    fontStyle: 'italic',
+    lineHeight: 24,
+  },
+
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 15,
+  },
+  detailBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.divider,
+  },
+  detailKey: {
+    ...theme.typography.body,
+    color: theme.colors.textSecondary,
+  },
+  detailValWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  detailDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
   },
-
-  commentBox: {
-    backgroundColor: theme.colors.surfaceSoft,
-    padding: 20,
-    borderRadius: 20,
-    width: '100%',
-    borderLeftWidth: 4,
-    borderLeftColor: theme.colors.borderStrong,
+  detailVal: {
+    ...theme.typography.bodyStrong,
   },
-  commentText: { color: theme.colors.textPrimary, fontStyle: 'italic', lineHeight: 24 },
 
-  warrantySection: {
-    backgroundColor: theme.colors.white,
-    padding: 32,
-    borderRadius: 32,
-    borderWidth: 1.5,
-    borderStyle: 'dashed',
-    borderColor: theme.colors.borderStrong,
-  },
   warrantyHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-    gap: 12,
+    gap: 11,
+    marginBottom: 14,
   },
-  warrantyDesc: {
-    color: theme.colors.textSecondary,
-    marginBottom: 24,
-    lineHeight: 22,
-  },
-  certBadgeRow: {
-    flexDirection: 'row',
+  warrantyIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 28,
+    justifyContent: 'center',
   },
-  certCheck: {
+  warrantyImg: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: theme.colors.success,
-    justifyContent: 'center',
+    resizeMode: 'contain',
+  },
+  warrantyPeriod: {
+    ...theme.typography.caption,
+    color: theme.colors.textSecondary,
+    marginTop: 2,
+  },
+  warrantyDesc: {
+    ...theme.typography.body,
+    color: theme.colors.textSecondary,
+    lineHeight: 23,
+  },
+  careRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 10,
+    marginBottom: 10,
   },
-  
-  careList: {
-    backgroundColor: theme.colors.surfaceSoft,
-    padding: 24,
-    borderRadius: 24,
-    marginBottom: 24,
+  careText: {
+    ...theme.typography.body,
+    color: theme.colors.textPrimary,
   },
-  careItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 16,
+  disclaimerBox: {
+    marginTop: 8,
+    paddingVertical: 13,
+    paddingHorizontal: 15,
+    backgroundColor: theme.colors.surfaceMuted,
+    borderRadius: theme.borderRadius.l,
   },
-  bulletIcon: { marginRight: 12 },
-  careText: { flex: 1, color: theme.colors.black, lineHeight: 24 },
-  emptyCare: { color: theme.colors.textTertiary, textAlign: 'center', fontStyle: 'italic' },
-  
-  legalNoticeBox: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    backgroundColor: theme.colors.surfaceSoft,
-    padding: 16,
-    borderRadius: 16,
-  },
-  legalNotice: {
-    flex: 1,
+  disclaimerText: {
+    ...theme.typography.caption,
     color: theme.colors.textTertiary,
     lineHeight: 18,
   },
 
-  floatingFooter: {
+  footer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    paddingHorizontal: theme.spacing.xl,
-    paddingBottom: 40, 
-    paddingTop: 16,
-    // Add a gradient or just transparent background if we want it to float
-    backgroundColor: 'rgba(245,245,247, 0.9)', 
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    paddingBottom: 34,
+    backgroundColor: theme.colors.background,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.03)',
   },
-  floatingButton: {
-    shadowColor: theme.colors.black,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 6,
-  },
-
-  emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: theme.spacing.xl },
-  emptyTitle: { color: theme.colors.black, marginTop: theme.spacing.m, marginBottom: theme.spacing.xs },
-  emptyDesc: { color: theme.colors.textSecondary, textAlign: 'center' },
 });

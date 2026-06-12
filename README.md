@@ -71,15 +71,27 @@
 
 ## ✨ 핵심 기능 상세
 
+### 0. 메인 대시보드 — `index.tsx`
+
+- **Hero CTA 배너**: "사진 한 장이면 충분해요" 메시지와 함께 매력적인 그라데이션 배너 및 중앙 집중형 FAB(Floating Action Button)을 통한 사진 업로드 유도
+- **최근 요청 내역**: 진행 중이거나 완료된 내 요청 건의 응답 횟수 및 상태를 한눈에 볼 수 있는 요약 카드 제공
+- **AI 요청서 미리보기**: 베란다 방충망 예시를 통해 앱의 핵심 기능인 '사진 기반 AI 분석'을 직관적으로 안내
+- **참고 시공 단가**: 자주 찾는 7가지 시공 영역(수전, 실리콘, 방충망 등)의 대략적인 시세를 가로 스크롤 형태의 카드로 제공하여 기준점 제시
+- **전문가 응답 비교 예시**: 작업 방식, 방문 여부 등 동일한 기준으로 여러 전문가를 비교할 수 있음을 보여주는 인터랙티브 카드 제공
+- **안심 선택 기준 가이드**: 작업 전후 사진 기록, 사후 관리 등 프리미엄 보증에 대한 신뢰감을 주는 안내 가이드 포함
+
+---
+
 ### 1. 간편한 문제 접수 (사진 기반) — `upload.tsx`
 
 #### 이미지 업로드 시스템
-- **최대 3장 다각도 사진 첨부**: `expo-image-picker`를 활용하여 갤러리에서 이미지를 선택합니다.
-- **Base64 인코딩 동시 수행**: 사진 선택 시 `base64: true` 옵션으로 URI와 Base64 데이터를 동시에 획득하여, 별도의 인코딩 단계 없이 즉시 AI API에 전달 가능합니다.
-- **다중 선택 지원**: `allowsMultipleSelection: true`로 한 번에 여러 장을 선택할 수 있으며, 남은 슬롯 수만큼만 선택을 허용합니다 (`selectionLimit: 3 - imageUris.length`).
+- **최대 3장 다각도 사진 첨부**: `useRequestFlow`의 `addPhotos()` 함수를 통해 카메라 직접 촬영 또는 갤러리 선택을 ActionSheet로 제공합니다.
+- **Base64 인코딩 동시 수행**: 사진 선택/촬영 시 `base64: true` 옵션으로 URI와 Base64 데이터를 동시에 획득하여, 별도의 인코딩 단계 없이 즉시 AI API에 전달 가능합니다.
+- **페어 동기화 보장**: `imageUris`와 `imageBase64s`가 항상 동일한 길이를 유지하도록 base64가 유효한 asset만 쌍으로 추가됩니다.
+- **다중 선택 지원 (갤러리)**: `allowsMultipleSelection: true`로 한 번에 여러 장을 선택할 수 있으며, 남은 슬롯 수만큼만 선택을 허용합니다 (`selectionLimit: remainingSlots`).
 - **이미지 품질 최적화**: `quality: 0.7`로 압축하여 API 전송 용량을 줄이면서도 분석에 충분한 화질을 유지합니다.
-- **개별 삭제**: 각 썸네일(100×100px, borderRadius 14px)의 우상단에 반투명 검정 원형 버튼(×)으로 개별 삭제가 가능합니다.
-- **권한 관리**: 갤러리 접근 권한을 사전에 요청하며, 거부 시 안내 Alert를 표시합니다.
+- **개별 삭제**: 각 썸네일의 우상단 × 버튼으로 개별 삭제가 가능하며, `imageUris`/`imageBase64s` 두 배열을 동시에 인덱스 기준으로 필터링합니다.
+- **권한 관리**: 카메라/갤러리 접근 권한을 사전에 요청하며, 거부 시 안내 Alert를 표시합니다.
 
 #### 위치 선택 (Chip)
 사전 정의된 7가지 위치 옵션을 `Chip` 컴포넌트로 제공합니다:
@@ -94,7 +106,7 @@
 ```
 
 #### 진행 상태 및 유효성 검증
-- `StepIndicator` 컴포넌트가 현재 단계(1/2)를 프로그레스 바로 시각화합니다.
+- `StepIndicator` (upload.tsx 인라인 컴포넌트)가 현재 단계(1/2)를 타이틀 + 카운트 형태로 시각화합니다.
 - 3가지 항목(사진, 위치, 증상) 중 미완료 항목 수를 하단 헬퍼 텍스트로 안내합니다: `"2개 항목을 완료하면 분석을 시작할 수 있어요"`.
 - 모든 항목이 완료되어야 "AI 분석 시작" 버튼이 활성화됩니다 (`disabled={!canProceed}`).
 
@@ -363,18 +375,28 @@ analyzeImage() 호출
 ## 📱 화면별 상세 플로우
 
 ```
-[홈] index.tsx
-  │ SafeAreaView 래핑
-  │ "AI 생활시공 어시스턴트" eyebrow 텍스트
-  │ "고치다" 로고 (38px, weight 800)
-  │ 3단계 가이드 (번호 원형 아이콘 + 제목 + 설명):
-  │   ① 문제 사진 찍기 — "거실, 욕실, 어디든 한 장이면 OK"
-  │   ② AI가 진단 — "공종 분류와 예상 비용까지 자동"
-  │   ③ 전문가 응답 비교 — "검증된 시공자 견적을 한 번에"
-  │ "사진으로 시작하기" CTA 버튼
-  │ "30초면 충분해요" 하단 안내
+[Custom Tab Bar] _layout.tsx (Tabs)
+  │ BlurView 기반의 반투명 플로팅 탭 바
+  │ 4개의 탭 (홈, 요청, 채팅, 내 정보) 구성
+  │ 중앙에 위치한 촬영용 둥근 Floating Action Button (FAB)
   │
-  ↓ 버튼 탭 (clearRequest() 호출 → 상태 초기화 후 이동)
+  ├─ [홈] index.tsx (대시보드 형태의 고도화된 홈 화면)
+  │   │ 상단 Hero Banner: "사진 한 장이면 충분해요" 안내 및 촬영 CTA
+  │   │ 최근 요청 내역 (진행 상태 요약 카드)
+  │   │ AI 요청서 미리보기 (베란다 방충망 예시)
+  │   │ 참고 시공 단가 (가로 스크롤 카드)
+  │   │ 전문가 응답 비교 예시 및 안심 선택(작업 확인서/보증서) 가이드
+  │
+  ├─ [요청] history.tsx
+  │   │ 내 요청 상태 추적 (진행 중 / 완료)
+  │
+  ├─ [채팅] chats.tsx
+  │   │ 전문가와의 상담/채팅 목록 (Mock 데이터 표시)
+  │
+  └─ [내 정보] profile.tsx
+      │ 앱 정보, 데모 안내, 자주 묻는 질문 등 메뉴 제공
+
+  ↓ 중앙 FAB 카메라 버튼 또는 "사진으로 시작" 탭 (상태 초기화 후 이동)
   │
 [업로드] upload.tsx
   │ StepIndicator: "요청서 작성" (1/2)
@@ -389,9 +411,15 @@ analyzeImage() 호출
   │ useEffect에서 자동으로 submitAnalysis() 호출
   │ (analysisResult 없고, isLoading 아니고, error 없을 때만)
   │
-  ├─ [로딩] Skeleton 3줄 + 참고 시세 카드
-  ├─ [에러/REJECTED] 에러 원 + 사유 + 재시도/재업로드/직접작성 버튼
-  └─ [성공] 분석 결과 리포트 (Badge + Section + BulletLine + KV Row)
+  ├─ [로딩] Skeleton 3줄 + 인라인 참고 시세 카드 (공종별 가격, 변동 요인, 비교 기준)
+  ├─ [에러/REJECTED] 에러 원 + 사유 + 재시도/재업로드/직접작성 버튼 (StatusScreen 컴포넌트)
+  └─ [성공] 고도화된 AI 분석 결과 리포트
+       │ 최상단 프리미엄 디자인의 예상 비용 감각 카드 (Premium Cost Card)
+       │ 문제 후보 타이틀 및 상태 배지(공종, 방문 필요, 신뢰도, 위험도)
+       │ 전문가에게 전달할 요청 방향 (추천 조치)
+       │ 사진에서 확인한 내용 (체크 리스트)
+       │ 추가 확인이 필요한 내용 (경고 UI 리스트)
+       │ 직접 확인 가이드 및 "직접 시도하지 마세요" (고위험 차단) 경고 박스
        │
        ↓ "요청서 확인하기" 버튼
        │
@@ -438,19 +466,27 @@ analyzeImage() 호출
 │              State Layer │                                   │
 │              ┌──────┴──────────────┐                         │
 │              │ RequestContext.tsx   │                         │
-│              │ ┌─────────────────┐ │                         │
-│              │ │ imageUris       │ │                         │
-│              │ │ imageBase64s    │ │                         │
-│              │ │ location        │ │                         │
-│              │ │ symptom         │ │                         │
-│              │ │ analysisResult  │ │                         │
-│              │ │ draftText       │ │                         │
-│              │ │ isLoading       │ │                         │
-│              │ │ error           │ │                         │
-│              │ ├─────────────────┤ │                         │
-│              │ │ submitAnalysis()│ │ ← State + Service 연결  │
-│              │ │ clearRequest()  │ │                         │
-│              │ └─────────────────┘ │                         │
+│              │ ┌─────────────────────┐ │                       │
+│              │ │ imageUris           │ │                       │
+│              │ │ imageBase64s        │ │                       │
+│              │ │ location            │ │                       │
+│              │ │ symptom             │ │                       │
+│              │ │ aiDraft             │ │                       │
+│              │ │ selectedExpertId    │ │                       │
+│              │ │ analysisResult      │ │                       │
+│              │ │ isLoading           │ │                       │
+│              │ │ error               │ │                       │
+│              │ ├─────────────────────┤ │                       │
+│              │ │ setImageUris()      │ │ ← State + Service 연결│
+│              │ │ setImageBase64s()   │ │                       │
+│              │ │ setLocation()       │ │                       │
+│              │ │ setSymptom()        │ │                       │
+│              │ │ setAiDraft()        │ │                       │
+│              │ │ setSelectedExpertId()│ │                      │
+│              │ │ setAnalysisResult() │ │                       │
+│              │ │ submitAnalysis()    │ │                       │
+│              │ │ clearRequest()      │ │                       │
+│              │ └─────────────────────┘ │                       │
 │              └─────────┬───────────┘                         │
 │                        │                                     │
 ├────────────────────────┼─────────────────────────────────────┤
@@ -515,14 +551,16 @@ analysis.tsx                  │                          │                  
 
 | 레이어 | 파일 | 책임 | 상태 보유 | 외부 의존성 |
 |---|---|---|---|---|
-| **View** | `index.tsx`, `upload.tsx`, `analysis.tsx`, `request-review.tsx`, `expert-responses.tsx`, `expert/[id].tsx` | UI 렌더링, 사용자 인터랙션 처리, 네비게이션 | 지역 UI 상태만 | `useRequest()`, `expo-router` |
-| **State** | `RequestContext.tsx` | 전역 상태 관리, 서비스 호출 위임, 상태 전환(로딩/에러/완료) | 8개 전역 상태 + 2개 액션 | `analyzeImage()` |
-| **Service** | `aiService.ts`, `expertService.ts` | AI API 통신, 프롬프트 생성, 타임아웃·에러 처리, Mock 전환 | 없음 (Stateless, 순수 함수) | `@google/generative-ai`, Mock 데이터 |
-| **Data** | `mockData.ts`, `repairPriceGuides.ts` | 정적 데이터 소스 | 없음 (정적 상수) | 없음 |
-| **Theme** | `theme/index.ts` | 디자인 토큰 (색상, 타이포, 간격, radius) | 없음 (`as const`) | 없음 |
-| **Types** | `types/index.ts` | 공유 TypeScript 인터페이스 | 없음 | 없음 |
-| **Utils** | `utils/expertDisplay.ts` | 표현 로직 유틸리티 | 없음 | `theme` |
-| **Layout** | `_layout.tsx` | Stack 네비게이터 설정, RequestProvider 주입, 화면별 헤더 옵션 | 없음 | `expo-router`, `RequestContext` |
+| **View (Screens)** | `src/app/(tabs)/*` (index, history, chats, profile), `src/app/upload.tsx`, `src/app/analysis.tsx`, `src/app/request-review.tsx`, `src/app/expert-responses.tsx`, `src/app/expert/[id].tsx` | UI 렌더링 및 네비게이션 제어 | 없음 (비즈니스 로직은 Custom Hook에 위임) | `useRequestFlow()`, `useRequest()`, `expo-router` |
+| **Hooks** | `src/hooks/useRequestFlow.ts` | 사진 촬영/앨범 선택, 햅틱(Haptics) 피드백 등 화면 비즈니스 로직 격리 | 지역 UI 보조 상태 | `ImagePicker`, `Haptics` |
+| **State** | `src/context/RequestContext.tsx` | 전역 상태 관리 (요청 상태 흐름, 로딩, 에러 핸들링) | 9개 전역 상태 + 9개 액션 | `analyzeImage()` |
+| **Components** | `src/components/` 산하 (Badge, Button, Card, Chip, Skeleton 등) | 재사용 가능한 아토믹 디자인 단위 UI 컴포넌트 | 자체 스타일 및 단순 프롭스 | `src/theme/` 디자인 토큰 |
+| **Service** | `src/services/aiService.ts`, `src/services/expertService.ts` | AI API 통신, 프롬프트 생성, Mock API 응답 시뮬레이션 | 없음 (Stateless 순수 함수) | `@google/generative-ai` |
+| **Data** | `src/data/mockData.ts`, `src/data/repairPriceGuides.ts` | 정적 상수 데이터 및 시세 휴리스틱 데이터 제공 | 없음 (정적 상수) | 없음 |
+| **Theme** | `src/theme/index.ts` | 일관된 디자인 사양(Colors, Shadows, Radius 등) 관리 | 없음 (`as const`) | 없음 |
+| **Types** | `src/types/index.ts` | 공유 TypeScript 모델 및 타입 정의 | 없음 | 없음 |
+| **Utils** | `src/utils/expertDisplay.ts` | 상태값 조건부 색상 매핑 등 유틸리티 함수 | 없음 | `theme` |
+| **Layout** | `src/app/_layout.tsx`, `src/app/(tabs)/_layout.tsx` | 전체 내비게이션 Stack 및 Tab 구조화, RequestProvider 주입 | 없음 | `expo-router` |
 
 ---
 
@@ -778,24 +816,18 @@ interface ChipProps {
 
 ---
 
-### StepIndicator — `components/StepIndicator.tsx`
+### StepIndicator — `upload.tsx` 인라인 컴포넌트
 
-현재 진행 단계를 프로그레스 바로 시각화.
+별도 파일 없이 `upload.tsx` 내에 인라인으로 정의된 단계 표시 컴포넌트.
 
 **Props:**
 ```typescript
-interface StepIndicatorProps {
-  current: number;   // 현재 단계
-  total: number;     // 전체 단계 수
-  label?: string;    // 단계 레이블 (없으면 "단계 {current}")
-}
+{ current: number; total: number; label: string }
 ```
 
 **구조:**
-- 상단: 3px 높이의 프로그레스 바 (`width: (current/total) * 100%`)
-  - 트랙: `divider (#F0F0F3)` 배경
-  - 채움: `textPrimary (#111111)` 배경
-- 하단: 왼쪽 라벨 + 오른쪽 "1 / 2" 카운트
+- 왼쪽 라벨(단계명) + 오른쪽 `current / total` 카운트 (회색 슬래시 스타일)
+- `h3` 타이포그래피 기반, `margin-bottom: 22px`
 
 ---
 
@@ -817,40 +849,24 @@ interface SkeletonProps {
 
 ---
 
-### LoadingPriceGuideCard — `components/LoadingPriceGuideCard.tsx`
+### TabHeader & Icon — `components/Header.tsx`, `components/Icon.tsx`
 
-AI 분석 로딩 중 표시되는 참고 시세 안내 카드. **3개의 서브 카드**로 구성됩니다.
-
-**Props:**
-```typescript
-interface Props {
-  guide: RepairPriceGuide;  // 매칭된 시세 데이터
-}
-```
-
-**서브 카드 구성:**
-| 카드 | 내용 |
-|---|---|
-| **① 시세 카드** | 공종명 → 작업명 → "평균" + 가격(24px, Primary 색, weight 800) → 참고 범위 |
-| **② 변동 요인 카드** | "가격이 달라지는 이유" → 요인들(쉼표 구분) → 면책문구 |
-| **③ 비교 기준 카드** | "고치다의 비교 기준" → "최저가보다 작업 범위와 사후관리 가능성을 함께 비교합니다" |
-
-**하단 면책:** "아래 금액은 참고용 시세이며, 최종 비용은 전문가 확인 후 달라질 수 있어요." (중앙 정렬, 12px)
+**AppHeader**: 스택 화면(upload, analysis, request-review 등)에서 뒤로가기 버튼과 함께 표시되는 헤더 컴포넌트입니다. `TabHeader`는 탭 화면 상단에 대형 타이틀과 서브타이틀을 렌더링합니다.
+**Icon**: SFSymbols(`expo-symbols`) 및 `@expo/vector-icons`의 Ionicons를 래핑하여 일관된 사이즈와 색상을 주입하는 통합 아이콘 컴포넌트입니다.
 
 ---
 
-### SectionHeader — `components/SectionHeader.tsx`
+### PressableScale — `components/ui/PressableScale.tsx`
 
-섹션 제목 + 서브타이틀 컴포넌트.
+중앙 FAB 버튼 탭 시 살짝 눌리는 듯한 스케일 축소 애니메이션(`react-native-reanimated`)을 제공하여 인터랙션 경험을 고급화하는 래퍼 컴포넌트입니다.
 
-**Props:**
-```typescript
-interface SectionHeaderProps {
-  title: string;
-  subtitle?: string;
-  size?: 'md' | 'sm';  // md: h2(20px), sm: h3(16px)
-}
-```
+---
+
+## 🪝 커스텀 훅 (Custom Hooks)
+
+### useRequestFlow — `src/hooks/useRequestFlow.ts`
+
+UI와 비즈니스 로직을 분리하는 핵심 커스텀 훅입니다. 홈 CTA·FAB·업로드 화면이 공유하는 사진 추가 로직(`addPhotos`)을 담당합니다. 내부적으로 카메라 직접 촬영(`takePhoto`)과 갤러리 선택(`pickFromLibrary`)을 ActionSheet로 제공하며, 최대 3장 제한과 함께 `imageUris`/`imageBase64s` 쌍이 항상 동기화되도록 보장합니다. 햅틱 피드백(`expo-haptics`)과 권한 처리도 훅 내부에서 완전히 격리합니다.
 
 ---
 
@@ -890,6 +906,7 @@ interface AIRepairAnalysis {
     };
   };
   disclaimer: string;
+  priceGuide?: RepairPriceGuide;  // 로딩 중 표시될 참고 시세 (AI 응답에 포함될 수 있음)
 }
 ```
 
@@ -899,15 +916,18 @@ interface AIRepairAnalysis {
 interface ExpertResponse {
   id: string;
   expertName: string;
-  rating: number;
   available: boolean;
   workType: string;
   costLevel: string;
   visitRequired: boolean;
-  schedule: string;
   comment: string;
-  trustElements: string[];    // 신뢰 요소 (예: "작업 확인서 가능", "경력 10년 이상")
   warranty: WarrantyOption;
+  // 백엔드 연동 시 확장 가능한 선택 필드
+  rating?: number;
+  schedule?: string;
+  trustElements?: string[];        // 신뢰 요소 (예: "작업 확인서 가능", "경력 10년 이상")
+  responseBasis?: string;          // 응답 근거 (예: "사진 기반 확인 / 현장 실측 필요")
+  recommendedReason?: string;      // 추천순 정렬 시 사용자에게 보여줄 추천 이유
 }
 ```
 
@@ -915,11 +935,23 @@ interface ExpertResponse {
 
 ```typescript
 interface WarrantyOption {
-  available: boolean;
   type: "작업 확인서" | "안심 보증서" | "없음";
-  period: string;              // "1년", "6개월", ""
-  description: string;         // 보증 설명
-  includedCare: string[];      // 포함 서비스 (예: ["재시공"], ["무상 점검"])
+  includedCare: string[];          // 포함 서비스 (예: ["재시공"], ["무상 점검"])
+  // 백엔드 연동 시 채워질 수 있는 선택 필드
+  available?: boolean;
+  period?: string;                 // "1년", "6개월", ""
+  description?: string;            // 보증 설명
+}
+```
+
+### `RequestCompleteness` — 요청서 완성도 인터페이스
+
+```typescript
+interface RequestCompleteness {
+  score: number;
+  completedItems: string[];
+  missingItems: string[];
+  recommendation: string;
 }
 ```
 
@@ -937,17 +969,23 @@ interface RepairPriceGuide {
 }
 ```
 
-### `RequestData` — 요청 데이터 인터페이스
+### `RequestState` / `RequestData` — 요청 상태 인터페이스
 
 ```typescript
-interface RequestData {
-  id: string;
-  imageUri: string;
+interface RequestState {
+  imageUris: string[];
+  imageBase64s: string[];
   location: string;
   symptom: string;
-  analysis: AIRepairAnalysis;
-  draftText: string;
+  aiDraft: string;              // AI가 생성한 요청서 메시지 (사용자 편집 전)
+  selectedExpertId: string;     // 상담 요청할 전문가 ID
+  analysisResult: AIRepairAnalysis | null;
+  isLoading: boolean;
+  error: string | null;
 }
+
+// RequestData는 RequestState와 동일 타입 (type alias)
+type RequestData = RequestState;
 ```
 
 ---
@@ -958,118 +996,75 @@ interface RequestData {
 gochida/
 ├── src/
 │   ├── app/                               # Expo Router 파일 기반 라우팅
-│   │   ├── _layout.tsx                    # 루트 레이아웃
-│   │   │                                   - RequestProvider로 전체 앱을 감싸 전역 상태 주입
-│   │   │                                   - Stack 네비게이터 설정 (헤더 스타일, 그림자 제거)
-│   │   │                                   - 6개 화면 등록 (index, upload, analysis,
-│   │   │                                     request-review, expert-responses, expert/[id])
+│   │   ├── (tabs)/                        # 메인 탭 내비게이터 (CustomTabBar & FAB)
+│   │   │   ├── _layout.tsx                # 하단 탭 바 레이아웃 및 중앙 카메라 FAB 설정
+│   │   │   ├── index.tsx                  # 홈 화면 (서비스 안내 가이드, 사진 요청 시작)
+│   │   │   ├── history.tsx                # 요청 내역 화면
+│   │   │   ├── chats.tsx                  # 채팅 화면 (전문가 상담 내역 Mock UI)
+│   │   │   └── profile.tsx                # 내 정보 화면 (메뉴, 데모 안내 등)
 │   │   │
-│   │   ├── index.tsx                      # 홈 화면
-│   │   │                                   - 서비스 소개 + 3단계 가이드 + "사진으로 시작하기" CTA
-│   │   │                                   - SafeAreaView 래핑, headerShown: false
-│   │   │
-│   │   ├── upload.tsx                     # 사진 업로드 + 위치/증상 선택
-│   │   │                                   - expo-image-picker (다중 선택, base64, quality 0.7)
-│   │   │                                   - LOCATIONS 7종 + SYMPTOMS 6종 Chip
-│   │   │                                   - 3가지 유효성 검증 → canProceed 판단
-│   │   │
-│   │   ├── analysis.tsx                   # AI 분석 결과 리포트
-│   │   │                                   - 3단 상태 UI (로딩/에러/성공)
-│   │   │                                   - 로딩: Skeleton + LoadingPriceGuideCard
-│   │   │                                   - 에러: ErrorMark + 재시도/재업로드/직접작성 분기
-│   │   │                                   - 성공: Badge Row + Section + BulletLine + KV Row
-│   │   │
-│   │   ├── request-review.tsx             # 요청서 초안 확인 및 추가 메모
-│   │   │                                   - StepIndicator 2/2
-│   │   │                                   - AI 자동 생성 KV 카드 (3행)
-│   │   │                                   - TextInput (multiline, minHeight 120px)
-│   │   │                                   - KeyboardAvoidingView (iOS padding)
-│   │   │
-│   │   ├── expert-responses.tsx           # 전문가 응답 목록
-│   │   │                                   - headerLeft: null (뒤로가기 차단)
-│   │   │                                   - 로딩: 3개 Skeleton 카드 + ActivityIndicator
-│   │   │                                   - 데이터: 전문가 카드 (이름/별점/보증/비용/방문/소견)
-│   │   │
+│   │   ├── _layout.tsx                    # 루트 레이아웃 (RequestContext 주입, Stack 설정)
+│   │   ├── upload.tsx                     # 1단계: 사진 업로드 및 위치/증상 선택
+│   │   ├── analysis.tsx                   # 2단계: AI 실시간 진단 결과 확인 (시공 비용, 발견근거 등)
+│   │   ├── request-review.tsx             # 3단계: AI 생성 요청서 검토 및 최종 의뢰 전송
+│   │   ├── expert-responses.tsx           # 4단계: 매칭된 전문가별 카드형 견적서/응답 비교
 │   │   └── expert/
-│   │       └── [id].tsx                   # 전문가 상세 (동적 라우팅)
-│   │                                       - useLocalSearchParams로 ID 수신
-│   │                                       - cancelled 플래그 클린업 패턴
-│   │                                       - getAvailableColor() 유틸리티로 상태 색상 결정
-│   │                                       - 5개 상세 행 테이블 + 상담하기 CTA
+│   │       └── [id].tsx                   # 5단계: 전문가 상세 프로필 및 안심 보증서/확인서 확인
 │   │
-│   ├── components/                        # 재사용 가능한 원자적 UI 컴포넌트 (8개)
-│   │   ├── Badge.tsx                      # 5-variant 상태 레이블 (primary/success/warning/danger/neutral)
-│   │   ├── Button.tsx                     # 4-variant CTA 버튼 (primary/secondary/outline/ghost)
-│   │   ├── Card.tsx                       # 2-variant 범용 카드 (outlined/muted, 터치 자동 전환)
-│   │   ├── Chip.tsx                       # 토글 선택형 Pill 버튼 (idle/selected)
-│   │   ├── LoadingPriceGuideCard.tsx      # AI 로딩 중 참고 시세 카드 (3개 서브 카드)
-│   │   ├── SectionHeader.tsx              # 섹션 제목 (md: h2 / sm: h3) + 서브타이틀
-│   │   ├── Skeleton.tsx                   # 애니메이션 로딩 자리표시자 (opacity 펄스, 700ms)
-│   │   └── StepIndicator.tsx              # 프로그레스 바 + 단계 라벨 + 카운트
+│   ├── components/                        # 재사용 가능한 UI 컴포넌트
+│   │   ├── ui/
+│   │   │   └── PressableScale.tsx         # 터치 시 스케일 축소 애니메이션 래퍼
+│   │   ├── Badge.tsx                      # 5가지 변형 상태 레이블
+│   │   ├── Header.tsx                     # AppHeader(스택) / TabHeader(탭) 헤더 컴포넌트
+│   │   ├── Icon.tsx                       # expo-symbols + Ionicons 통합 아이콘 컴포넌트
+│   │   ├── Button.tsx                     # 4가지 타입의 둥근 CTA/보조 버튼
+│   │   ├── Card.tsx                       # Outlined/Muted 레이어드 카드 박스
+│   │   ├── Chip.tsx                       # Pill 형태의 토글 선택 버튼 (햅틱 피드백 적용)
+│   │   └── Skeleton.tsx                   # 투명도 애니메이션 자리표시자
 │   │
 │   ├── context/
-│   │   └── RequestContext.tsx             # 전역 상태 관리
-│   │                                       - 8개 상태: imageUris, imageBase64s, location, symptom,
-│   │                                         analysisResult, draftText, isLoading, error
-│   │                                       - 2개 액션: submitAnalysis(), clearRequest()
-│   │                                       - useMemo로 불필요한 re-render 방지
-│   │                                       - useCallback으로 함수 참조 안정화
+│   │   └── RequestContext.tsx             # 전역 상태 관리 컨텍스트
+│   │
+│   ├── hooks/                             # 비즈니스 로직 격리용 커스텀 훅
+│   │   └── useRequestFlow.ts              # 사진 촬영/앨범 선택, 권한 처리, Haptics 연동 (홈·FAB·업로드 공유)
 │   │
 │   ├── data/
-│   │   ├── mockData.ts                    # Mock 데이터
-│   │   │                                   - mockExpertResponses: 3명의 가상 전문가 응답
-│   │   │                                     (김반장 홈케어 ★4.8 / 꼼꼼시공 이기사 ★4.9 /
-│   │   │                                      뚝딱뚝딱 만물상 ★4.5)
-│   │   │                                   - buildMockAnalysis(): 방충망/창호 기준 분석 결과 생성기
-│   │   │
-│   │   └── repairPriceGuides.ts           # 7개 공종별 참고 시세 데이터
-│   │                                       - getSuggestedPriceGuide(): 위치+증상 → 시세 매칭 함수
-│   │                                         (14가지 휴리스틱 규칙, fallback은 무작위)
+│   │   ├── mockData.ts                    # 시공자 Mock 데이터 및 분석 Mock 생성
+│   │   └── repairPriceGuides.ts           # 7대 시공 영역 시세 데이터 및 매칭 휴리스틱
 │   │
 │   ├── services/
-│   │   ├── aiService.ts                   # AI 연동 서비스
-│   │   │                                   - buildPrompt(): 프롬프트 생성 (역할+규칙+스키마)
-│   │   │                                   - stripJsonFences(): JSON 마크다운 펜스 제거
-│   │   │                                   - callGeminiWithEdgeCases(): API 호출 + 45초 Timeout
-│   │   │                                     + 429 Rate Limit + 기타 에러 처리
-│   │   │                                   - analyzeImage(): 진입점 함수 (Mock/실제 분기)
-│   │   │
-│   │   └── expertService.ts               # 전문가 Mock API 서비스
-│   │                                       - submitRequest(): 1.5초 딜레이 시뮬레이션
-│   │                                       - fetchExpertResponses(): 1초 딜레이 후 3명 반환
-│   │                                       - fetchExpertResponseDetail(): 0.5초 딜레이 후 단건 반환
+│   │   ├── aiService.ts                   # Gemini API 멀티모달 프롬프트 송수신 및 방어적 파싱
+│   │   └── expertService.ts               # 전문가 응답 API 요청 시뮬레이션
 │   │
 │   ├── theme/
-│   │   └── index.ts                       # 디자인 토큰 시스템
-│   │                                       - colors: 18색 팔레트 + 2개 하위호환 별칭
-│   │                                       - typography: 8단계 텍스트 스케일
-│   │                                       - spacing: 6단계 간격 (4~44px)
-│   │                                       - borderRadius: 5단계 모서리 (6~9999px)
-│   │                                       - shadows: soft (모두 0/투명 — 플랫 디자인)
+│   │   └── index.ts                       # 프리미엄 UI 디자인 토큰 시스템 (Colors, Shadows, Radius 등)
 │   │
 │   ├── types/
-│   │   └── index.ts                       # 공유 TypeScript 인터페이스 (5개)
-│   │                                       - AIRepairAnalysis, ExpertResponse, WarrantyOption,
-│   │                                         RepairPriceGuide, RequestData
+│   │   └── index.ts                       # 공용 TypeScript 인터페이스 모음
 │   │
 │   └── utils/
-│       └── expertDisplay.ts               # 표현 로직 유틸리티
-│                                           - getAvailableColor(): 가능여부 → 색상 매핑
-│                                             ('가능'/true → success, '불가'/false → danger, 그 외 → warning)
+│       └── expertDisplay.ts               # 상태값 조건부 색상 매핑 등 유틸리티
 │
 ├── assets/                                # 정적 자원
-│   └── images/                            # 아이콘, 스플래시, 파비콘
+│   └── images/                            # 아이콘, 스플래시, 파비콘, 일러스트
 │       ├── icon.png                       # iOS 앱 아이콘
 │       ├── android-icon-foreground.png    # Android 적응형 아이콘 전경
 │       ├── android-icon-background.png    # Android 적응형 아이콘 배경
 │       ├── android-icon-monochrome.png    # Android 단색 아이콘
 │       ├── splash-icon.png                # 스플래시 화면 로고 (200px)
-│       └── favicon.png                    # Web 파비콘
+│       ├── favicon.png                    # Web 파비콘
+│       ├── hero.png                       # 홈 헤더 로고 아이콘
+│       ├── Hero_RepairFlow.png            # 홈 Hero 배너 일러스트
+│       └── Asset_*.png                    # 홈 대시보드 목업 일러스트 8장
+│                                          #   (AI 요청서, 시세 가이드, 업로드 카메라, 보증서,
+│                                          #    전문가 카드, 방충망/실리콘/문 수리 예시)
 │
 ├── docs/
 │   └── PRD.md                             # 제품 요구사항 정의서 (AX/DX 전략, MoSCoW, 지표)
 │
-├── ref/                                   # 참고 스크린샷 이미지 (8장)
+├── ref/                                   # 참고 자료
+│   ├── IMG_*.PNG                          # 참고 스크린샷 이미지 (8장)
+│   └── prototype/                         # 리디자인 기준이 된 웹 프로토타입 (HTML/JSX + 스크린샷 + 기록 문서)
 │
 ├── app.json                               # Expo 앱 설정 (번들 ID, 권한 메시지, 플러그인)
 ├── tsconfig.json                          # TypeScript 설정 (strict, path alias @/*)
@@ -1098,10 +1093,15 @@ gochida/
 
 | 기술 | 버전 | 역할 |
 |---|---|---|
-| react-native-reanimated | ~4.1.1 | 네이티브 드라이버 애니메이션 (Skeleton 펄스) |
+| react-native-reanimated | ~4.1.1 | 네이티브 드라이버 애니메이션 (Skeleton 펄스, PressableScale) |
 | react-native-gesture-handler | ~2.28.0 | 제스처 처리 |
 | react-native-safe-area-context | ~5.6.0 | SafeAreaView (노치/홈바 대응) |
 | react-native-screens | ~4.16.0 | 네이티브 화면 최적화 |
+| react-native-svg | 15.12.1 | SVG 아이콘 렌더링 |
+| react-native-worklets | 0.5.1 | Reanimated 워크릿 지원 |
+| expo-linear-gradient | ~15.0.8 | Hero 배너·탭 바 그라데이션 |
+| expo-blur | ~15.0.8 | BlurView 기반 반투명 플로팅 탭 바 |
+| expo-symbols | ~1.0.8 | SF Symbols 네이티브 아이콘 |
 
 ### 기타
 
@@ -1110,7 +1110,15 @@ gochida/
 | expo-haptics | ~15.0.8 | 햅틱 피드백 |
 | expo-splash-screen | ~31.0.13 | 스플래시 화면 |
 | expo-status-bar | ~3.0.9 | 상태바 스타일 관리 |
-| @expo/vector-icons | ^15.0.3 | 벡터 아이콘 |
+| expo-image | ~3.0.11 | 고성능 이미지 렌더링 |
+| expo-font | ~14.0.11 | 커스텀 폰트 로딩 |
+| expo-constants | ~18.0.13 | 앱 상수 접근 |
+| expo-linking | ~8.0.11 | 딥링크 처리 |
+| expo-system-ui | ~6.0.9 | 시스템 UI 설정 |
+| expo-web-browser | ~15.0.10 | 인앱 웹 브라우저 |
+| @expo/vector-icons | ^15.0.3 | Ionicons 등 벡터 아이콘 |
+| @react-navigation/native | ^7.1.8 | React Navigation 코어 |
+| @react-navigation/bottom-tabs | ^7.4.0 | 하단 탭 네비게이션 |
 | react-native-web | ~0.21.0 | 웹 호환 레이어 |
 
 ### 개발 도구
@@ -1334,14 +1342,14 @@ npm run lint      # ESLint 실행
 - [ ] 초안 무수정 통과율(Zero-Edit Rate) 측정
 
 ### 🟡 Should Have (서비스 완성도)
+- [x] 카메라 직접 촬영 기능 (`expo-image-picker` 카메라 모드 — `useRequestFlow.takePhoto()`로 구현 완료)
 - [ ] 실제 전문가 매칭 백엔드 연동
-- [ ] 카메라 직접 촬영 기능 (`expo-camera`)
 - [ ] 서버 사이드 AI 프록시 (API 키 보안)
-- [ ] 사용자 요청 이력 관리 (마이페이지)
+- [ ] 사용자 요청 이력 관리 백엔드 연동 (현재 요청/내 정보 탭은 Mock UI)
 - [ ] 푸시 알림 (전문가 응답 수신 시)
 
 ### 🟢 Could Have (고도화)
-- [ ] 사용자-전문가 인앱 채팅
+- [ ] 사용자-전문가 인앱 채팅 (현재 UI Mockup 완료)
 - [ ] 실시간 AI 답변 스트리밍 (UX 개선)
 - [ ] 전문가용 별도 대시보드 앱
 - [ ] 전문가 프로필 및 포트폴리오
@@ -1357,4 +1365,3 @@ npm run lint      # ESLint 실행
 ## 📄 라이선스
 
 이 프로젝트는 개인 및 학습 목적으로 제작되었습니다.
-# gochida

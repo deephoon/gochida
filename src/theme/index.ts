@@ -24,18 +24,22 @@ const palette = {
   primaryDark: '#4654D9',
 
   // Clean, premium grayscale inspired by references
-  background: '#F5F5F7', // Slightly cooler, very light gray for that premium app feel
+  background: '#F5F5F7',
   surface: '#FFFFFF',
+  surface2: '#FFFFFF',
   surfaceMuted: '#F9F9F9',
   surfaceSoft: '#F0F0F3',
+  premiumDark: '#1E2335',
   
   white: '#FFFFFF',
-  black: '#111111', // Rich black for premium cards/CTAs
+  black: '#111111',
   blackMuted: '#1C1C1E',
 
-  textPrimary: '#111111', // Almost black for max readability
-  textSecondary: '#6E6E73', // Apple-esque gray
+  textPrimary: '#111111',
+  textSecondary: '#6E6E73',
   textTertiary: '#A1A1A6',
+  onDark: '#FFFFFF',
+  onDarkSoft: 'rgba(255,255,255,0.66)',
 
   border: '#E5E5EA',
   borderStrong: '#D1D1D6',
@@ -73,6 +77,7 @@ export const theme = {
     l: 16,
     xl: 24, // Matches the reference card roundness
     xxl: 32, // For very large cards (like the premium black one)
+    xxxl: 40,
     pill: 9999, // For buttons and badges
   },
   // `radius` is an additive alias of `borderRadius` so new code can use the
@@ -83,6 +88,7 @@ export const theme = {
     l: 16,
     xl: 24,
     xxl: 32,
+    xxxl: 40,
     pill: 9999,
   },
   // Interaction tokens: keep press feedback consistent across Button/Chip/Card.
@@ -104,18 +110,32 @@ export const theme = {
   },
   shadows: {
     soft: {
-      shadowColor: '#000000',
+      shadowColor: '#111111',
       shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.04,
-      shadowRadius: 12,
+      shadowOpacity: 0.05,
+      shadowRadius: 14,
       elevation: 2,
     },
     medium: {
-      shadowColor: '#000000',
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.08,
-      shadowRadius: 24,
+      shadowColor: '#111111',
+      shadowOffset: { width: 0, height: 10 },
+      shadowOpacity: 0.09,
+      shadowRadius: 30,
       elevation: 4,
+    },
+    primary: {
+      shadowColor: '#5B6CFF',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.30,
+      shadowRadius: 20,
+      elevation: 8,
+    },
+    float: {
+      shadowColor: '#111111',
+      shadowOffset: { width: 0, height: 16 },
+      shadowOpacity: 0.12,
+      shadowRadius: 40,
+      elevation: 12,
     }
   },
 } as const;

@@ -15,14 +15,6 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const addImageUri = useCallback((uri: string) => {
-    setImageUris((prev) => [...prev, uri]);
-  }, []);
-
-  const removeImageUri = useCallback((uri: string) => {
-    setImageUris((prev) => prev.filter((item) => item !== uri));
-  }, []);
-
   const clearRequest = useCallback(() => {
     setImageUris([]);
     setImageBase64s([]);
@@ -38,6 +30,7 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
   const submitAnalysis = useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    setAnalysisResult(null);
     try {
       const result = await analyzeImage(location, symptom, imageBase64s);
       setAnalysisResult(result);
@@ -66,12 +59,11 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
       error,
       setImageUris,
       setImageBase64s,
-      addImageUri,
-      removeImageUri,
       setLocation,
       setSymptom,
       setAiDraft,
       setSelectedExpertId,
+      setAnalysisResult,
       clearRequest,
       submitAnalysis,
     }),
@@ -85,8 +77,7 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
       analysisResult,
       isLoading,
       error,
-      addImageUri,
-      removeImageUri,
+      setAnalysisResult,
       clearRequest,
       submitAnalysis,
     ]

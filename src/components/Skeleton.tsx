@@ -1,39 +1,35 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, ViewStyle } from 'react-native';
+import { Animated, DimensionValue, StyleProp, ViewStyle } from 'react-native';
 import { theme } from '../theme';
 
 interface SkeletonProps {
-  width?: number | `${number}%`;
-  height?: number;
+  width: DimensionValue;
+  height: DimensionValue;
   radius?: number;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
-export const Skeleton = ({ width = '100%', height = 14, radius, style }: SkeletonProps) => {
-  const opacity = useRef(new Animated.Value(0.5)).current;
+/** 로딩 중 콘텐츠 자리를 잡아주는 펄스 스켈레톤. analysis/expert 화면이 공유한다. */
+export function Skeleton({ width, height, radius = 4, style }: SkeletonProps) {
+  const anim = useRef(new Animated.Value(0.3)).current;
 
   useEffect(() => {
-    Animated.loop(
+    const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(opacity, { toValue: 1, duration: 700, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.5, duration: 700, useNativeDriver: true }),
-      ]),
-    ).start();
-  }, [opacity]);
+        Animated.timing(anim, { toValue: 1, duration: 800, useNativeDriver: true }),
+        Animated.timing(anim, { toValue: 0.3, duration: 800, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [anim]);
 
   return (
     <Animated.View
       style={[
-        styles.base,
-        { width: width as any, height, borderRadius: radius ?? theme.borderRadius.s, opacity },
+        { width, height, borderRadius: radius, backgroundColor: theme.colors.border, opacity: anim },
         style,
       ]}
     />
   );
-};
-
-const styles = StyleSheet.create({
-  base: {
-    backgroundColor: theme.colors.divider,
-  },
-});
+}
