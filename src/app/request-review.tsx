@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,6 @@ import {
   Platform,
   Image,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useRequest } from '../context/RequestContext';
@@ -17,7 +16,10 @@ import { theme } from '../theme';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { AppHeader } from '../components/Header';
+import { ProcessBottomNav } from '../components/ProcessBottomNav';
+import { ProcessCta } from '../components/ProcessCta';
 import { ASSET } from '../data/mockData';
+import { normalizeAiText } from '../utils/text';
 
 function StepIndicator({ current, total, label }: any) {
   return (
@@ -39,9 +41,11 @@ function StepIndicator({ current, total, label }: any) {
 }
 
 export default function RequestReviewScreen() {
-  const { analysisResult: analysis, setAnalysisResult, location, symptom, imageUris } = useRequest();
-  const [memo, setMemo] = useState('');
-  const insets = useSafeAreaInsets();
+  // additionalMemo는 전역 상태로 보관해 다른 탭으로 이동했다 돌아와도 유지된다.
+  const {
+    analysisResult: analysis, setAnalysisResult, location, symptom, imageUris,
+    additionalMemo: memo, setAdditionalMemo: setMemo,
+  } = useRequest();
 
   const a = analysis;
   const s = a ? a.requestDraft.structured : null;
@@ -176,6 +180,20 @@ export default function RequestReviewScreen() {
               </View>
             </Card>
 
+            {/* 전문가에게 보낼 요청서 미리보기 (requestDraft.message) */}
+            {a?.requestDraft?.message ? (
+              <Card radius={theme.borderRadius.xxl} style={{ marginTop: 16 }}>
+                <View style={styles.msgHeader}>
+                  <Ionicons name="chatbubble-ellipses" size={17} color={theme.colors.primary} />
+                  <Text style={styles.h3}>전문가에게 보낼 요청서</Text>
+                </View>
+                <View style={styles.msgBubble}>
+                  <Text style={styles.msgText}>{normalizeAiText(a.requestDraft.message)}</Text>
+                </View>
+                <Text style={styles.msgHint}>요청 시 이 내용이 전문가에게 전달돼요.</Text>
+              </Card>
+            ) : null}
+
             {/* Memo */}
             <View style={{ marginTop: 16 }}>
               <View style={styles.memoHeader}>
@@ -204,17 +222,19 @@ export default function RequestReviewScreen() {
                 AI가 사진과 입력 정보를 바탕으로 작성한 초안입니다. 최종 작업 범위와 비용은 전문가 상담 후 결정됩니다.
               </Text>
             </View>
+
+            <ProcessCta>
+              <Button
+                title="이대로 전문가에게 요청하기"
+                onPress={handleSubmit}
+                leftIcon={<Ionicons name="arrow-forward" size={19} color="#FFF" />}
+              />
+            </ProcessCta>
           </View>
         </ScrollView>
-
-        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 24) }]}>
-          <Button
-            title="이대로 전문가에게 요청하기"
-            onPress={handleSubmit}
-            leftIcon={<Ionicons name="arrow-forward" size={19} color="#FFF" />}
-          />
-        </View>
       </KeyboardAvoidingView>
+
+      <ProcessBottomNav />
     </View>
   );
 }
@@ -226,8 +246,8 @@ const styles = StyleSheet.create({
   },
   keyboardView: { flex: 1 },
   scroll: { flex: 1 },
-  // paddingBottom은 고정 CTA(버튼 56 + 패딩)보다 충분히 커야 마지막 카드가 가려지지 않는다.
-  scrollContent: { paddingTop: 4, paddingHorizontal: 24, paddingBottom: 130 },
+  // CTA를 스크롤 콘텐츠 안으로 옮겼으므로 paddingBottom은 고정 네비게이션을 가리지 않을 만큼만 둔다.
+  scrollContent: { paddingTop: 4, paddingHorizontal: 24, paddingBottom: 120 },
 
   stepContainer: {
     flexDirection: 'row',
@@ -454,6 +474,27 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
 
+  msgHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  msgBubble: {
+    backgroundColor: theme.colors.primaryLight,
+    borderRadius: theme.borderRadius.l,
+    padding: 15,
+  },
+  msgText: {
+    ...theme.typography.body,
+    color: theme.colors.primaryDark,
+    lineHeight: 25,
+  },
+  msgHint: {
+    ...theme.typography.caption,
+    color: theme.colors.textTertiary,
+    marginTop: 10,
+  },
   memoHeader: {
     flexDirection: 'row',
     alignItems: 'center',

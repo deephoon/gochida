@@ -9,6 +9,8 @@ import { theme } from '../theme';
 import { Chip } from '../components/Chip';
 import { Button } from '../components/Button';
 import { AppHeader } from '../components/Header';
+import { ProcessBottomNav } from '../components/ProcessBottomNav';
+import { ProcessCta } from '../components/ProcessCta';
 import { ASSET, LOCATIONS, SYMPTOMS } from '../data/mockData';
 import { PressableScale } from '../components/ui/PressableScale';
 
@@ -130,26 +132,27 @@ export default function UploadScreen() {
           </View>
         </View>
 
+        <ProcessCta>
+          {!canProceed && (
+            <Text style={styles.footerHint}>
+              {[
+                photoCount === 0 && '사진',
+                !location && '위치',
+                !symptom && '증상',
+              ].filter(Boolean).join(' · ')}을(를) 선택하면 요청서 정리를 시작할 수 있어요
+            </Text>
+          )}
+          <Button
+            title="AI 요청서 정리 시작"
+            disabled={!canProceed}
+            onPress={handleAnalyze}
+            leftIcon={<Ionicons name="sparkles" size={20} color="#FFF" />}
+          />
+        </ProcessCta>
+
       </ScrollView>
 
-      {/* Floating Footer */}
-      <View style={styles.footer}>
-        {!canProceed && (
-          <Text style={styles.footerHint}>
-            {[
-              photoCount === 0 && '사진',
-              !location && '위치',
-              !symptom && '증상',
-            ].filter(Boolean).join(' · ')}을(를) 선택하면 요청서 정리를 시작할 수 있어요
-          </Text>
-        )}
-        <Button
-          title="AI 요청서 정리 시작"
-          disabled={!canProceed}
-          onPress={handleAnalyze}
-          leftIcon={<Ionicons name="sparkles" size={20} color="#FFF" />}
-        />
-      </View>
+      <ProcessBottomNav />
     </View>
   );
 }
@@ -165,7 +168,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 24,
     paddingTop: 10,
-    paddingBottom: 150,
+    paddingBottom: 120,
   },
   stepIndicator: {
     flexDirection: 'row',

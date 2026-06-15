@@ -10,6 +10,53 @@ export interface WarrantyOption {
   available?: boolean;
   period?: string;
   description?: string;
+  /** 해당 전문가가 이 유형의 확인서/보증서를 발급한 누적 건수 (신뢰 지표). */
+  issuedCount?: number;
+  /** "발급 이력이 많은 전문가" 같은 신뢰 지표 설명 라벨. 법적 보장 표현은 사용하지 않는다. */
+  trustImpactLabel?: string;
+}
+
+/**
+ * 전문가 신뢰 지표. 별점 외에 작업 확인서·보증서 발급 이력과 사후관리 응답률을
+ * 리뷰처럼 누적 데이터로 보여주기 위한 구조. (법적 보장이 아닌 참고 지표)
+ */
+export interface TrustStats {
+  /** 확인 완료된 누적 작업 수. */
+  completedJobs: number;
+  /** 작업 확인서 발급 누적 건수. */
+  certificateIssuedCount: number;
+  /** 안심 보증서 발급 누적 건수. */
+  warrantyIssuedCount: number;
+  /** 사후관리 응답률 (0~100). */
+  afterCareResponseRate: number;
+  /** 최근 확인서 발급 시점 (예: "3일 전"). */
+  recentCertificateIssuedAt?: string;
+  /** 최근 30일 확인서 발급 건수. */
+  recentCertificateCount?: number;
+  /** 확인서 기반으로 검증된 작업 비율 (0~100). */
+  verifiedJobRatio?: number;
+}
+
+/** 채팅 메시지 (Mock 상담방의 대화 한 줄). */
+export interface ChatMessage {
+  from: 'me' | 'expert';
+  text: string;
+}
+
+/** 상담 시작 시 채팅 탭에 노출되는 상담방 (실제 채팅 서버 없이 Mock). */
+export interface ConsultationRoom {
+  id: string;
+  expertId: string;
+  expertName: string;
+  requestTitle: string;
+  warrantyType: WarrantyType;
+  /** 사용자가 전문가에게 보내는 첫 메시지(미리보기). */
+  previewMessage: string;
+  lastMessage: string;
+  timeText: string;
+  unread: number;
+  /** 상담방 대화 스레드. 탭 이동 후 복귀해도 유지되도록 전역 보관. */
+  thread: ChatMessage[];
 }
 
 export interface ExpertResponse {
@@ -29,6 +76,8 @@ export interface ExpertResponse {
   responseBasis?: string;
   /** 추천순 정렬 시 사용자에게 보여줄 추천 이유. */
   recommendedReason?: string;
+  /** 별점 외 신뢰 지표 (작업 확인서/보증서 발급 이력 등). */
+  trustStats?: TrustStats;
 }
 
 /** 요청서 검토 화면의 완성도 표시용 구조. */
@@ -80,10 +129,15 @@ export interface RequestState {
   location: string;
   symptom: string;
   aiDraft: string;
+  /** 요청서 검토 화면에서 사용자가 덧붙인 메모. 탭 이동 후 복귀해도 유지되도록 전역 보관. */
+  additionalMemo: string;
   selectedExpertId: string;
+  selectedExpertName: string;
   analysisResult: AIRepairAnalysis | null;
   isLoading: boolean;
   error: string | null;
+  /** 시작된 상담방 목록 (채팅 탭에서 Mock 상담방으로 노출). */
+  consultations: ConsultationRoom[];
 }
 
 export interface RequestContextValue extends RequestState {
@@ -93,10 +147,18 @@ export interface RequestContextValue extends RequestState {
   setLocation: (location: string) => void;
   setSymptom: (symptom: string) => void;
   setAiDraft: (draft: string) => void;
+  setAdditionalMemo: (memo: string) => void;
   setSelectedExpertId: (expertId: string) => void;
+  setSelectedExpertName: (name: string) => void;
   setAnalysisResult: (result: AIRepairAnalysis | null) => void;
   clearRequest: () => void;
   submitAnalysis: () => Promise<void>;
+  /** 상담 시작: 상담방을 생성(또는 갱신)하고 해당 방 id를 반환한다. 대화 스레드는 내부에서 초기화한다. */
+  startConsultation: (
+    room: Omit<ConsultationRoom, 'lastMessage' | 'timeText' | 'unread' | 'thread'>
+  ) => string;
+  /** 상담방에 메시지를 추가하고 lastMessage를 갱신한다. (탭 이동 후에도 유지) */
+  appendConsultationMessage: (roomId: string, message: ChatMessage) => void;
 }
 
 // 기존에 존재하던 추가 타입들 (필요시 유지)

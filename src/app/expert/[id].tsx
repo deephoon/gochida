@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { buildExperts, ASSET } from '../../data/mockData';
@@ -7,6 +7,9 @@ import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { AppHeader } from '../../components/Header';
 import { Skeleton } from '../../components/Skeleton';
+import { ProcessBottomNav } from '../../components/ProcessBottomNav';
+import { TrustStatsCard } from '../../components/TrustStatsCard';
+import { CertificatePreviewCard } from '../../components/CertificatePreviewCard';
 import { getAvailabilityColor } from '../../utils/expertDisplay';
 import { useRequest } from '../../context/RequestContext';
 import { theme } from '../../theme';
@@ -16,7 +19,7 @@ export default function ExpertDetailScreen() {
   const { id } = useLocalSearchParams() as ExpertDetailRouteParams;
   const rawId = Array.isArray(id) ? id[0] : id;
   const [loading, setLoading] = useState(true);
-  const { analysisResult } = useRequest();
+  const { analysisResult, setSelectedExpertId, setSelectedExpertName } = useRequest();
 
   const ex = buildExperts(analysisResult).find((item: any) => item.id === rawId);
 
@@ -67,8 +70,11 @@ export default function ExpertDetailScreen() {
     ['가능 일정', ex.schedule, theme.colors.textPrimary],
   ];
 
+  // 상담하기: 선택한 전문가를 저장하고 상담 준비 화면으로 이동한다. (단순 Alert로 끝내지 않음)
   const handleRequest = () => {
-    Alert.alert('MVP 범위 외 기능입니다.', '실제 서비스에서는 전문가와 채팅/통화로 연결됩니다.');
+    setSelectedExpertId(ex.id);
+    setSelectedExpertName(ex.expertName);
+    router.push(`/consultation/${ex.id}` as any);
   };
 
   return (
@@ -149,20 +155,28 @@ export default function ExpertDetailScreen() {
 
           <View style={styles.disclaimerBox}>
             <Text style={styles.disclaimerText}>
-              보증 조건과 책임 범위는 전문가와 직접 협의 후 확정됩니다. 고치다는 중개 정보를 제공하며 시공 결과에 직접 책임지지 않습니다.
+              보증·확인서 조건과 책임 범위는 전문가와 직접 협의 후 확정됩니다. 고치다는 중개 정보를 제공하며 시공 결과를 법적으로 보장하지 않습니다.
             </Text>
           </View>
         </Card>
 
+        {/* 신뢰 데이터 섹션 */}
+        <Text style={styles.sectionLabel}>신뢰 데이터</Text>
+        <TrustStatsCard stats={ex.trustStats} warrantyType={ex.warranty.type} />
+        <CertificatePreviewCard expertName={ex.expertName} />
+
+        {/* 상담하기 CTA: 하단 고정 대신 콘텐츠 끝에서 스크롤로 도달해 누른다 */}
+        <View style={styles.ctaWrap}>
+          <Button
+            title="이 전문가와 상담하기"
+            onPress={handleRequest}
+            leftIcon={<Ionicons name="chatbubble" size={18} color="#FFF" />}
+          />
+        </View>
+
       </ScrollView>
 
-      <View style={styles.footer}>
-        <Button 
-          title="이 전문가와 상담하기" 
-          onPress={handleRequest} 
-          leftIcon={<Ionicons name="chatbubble" size={18} color="#FFF" />}
-        />
-      </View>
+      <ProcessBottomNav />
     </View>
   );
 }
@@ -173,7 +187,18 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
   scroll: { flex: 1 },
-  scrollContent: { paddingHorizontal: 24, paddingBottom: 150, paddingTop: 16 },
+  scrollContent: { paddingHorizontal: 24, paddingBottom: 130, paddingTop: 16 },
+
+  ctaWrap: { marginTop: 28 },
+
+  sectionLabel: {
+    ...theme.typography.small,
+    color: theme.colors.textTertiary,
+    fontWeight: '700',
+    marginTop: 24,
+    marginBottom: 2,
+    marginLeft: 2,
+  },
 
   notFoundWrap: {
     flex: 1,

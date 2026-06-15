@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Card } from '../components/Card';
 import { AppHeader } from '../components/Header';
 import { Skeleton } from '../components/Skeleton';
+import { ProcessBottomNav } from '../components/ProcessBottomNav';
 import { getAvailabilityColor, getAvailabilityBg } from '../utils/expertDisplay';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -75,11 +76,18 @@ export default function ExpertResponsesScreen() {
             {experts.map((ex: any) => {
               const isTop = ex.rating >= maxRating;
               const hasWarranty = ex.warranty.type !== '없음';
+              const ts = ex.trustStats || {};
               const tiles = [
                 ['작업 방식', ex.workType, 'build'],
                 ['비용 감각', ex.costLevel, 'flash'],
                 ['방문 여부', ex.visitRequired ? '방문 확인' : '사진 확인', 'location'],
               ];
+              // 신뢰 미니 지표: 가격보다 먼저, 발급 이력을 리뷰처럼 노출한다.
+              const trustPills = [
+                ts.certificateIssuedCount != null && { icon: 'document-text', text: `작업 확인서 ${ts.certificateIssuedCount}건` },
+                ts.warrantyIssuedCount != null && ts.warrantyIssuedCount > 0 && { icon: 'shield-checkmark', text: `안심 보증서 ${ts.warrantyIssuedCount}건` },
+                ts.afterCareResponseRate != null && { icon: 'chatbubbles', text: `사후관리 응답 ${ts.afterCareResponseRate}%` },
+              ].filter(Boolean) as { icon: string; text: string }[];
 
               return (
                 <Card key={ex.id} radius={theme.borderRadius.xxxl} pad={0} style={styles.cardWrapper} onPress={() => handleSelect(ex.id)}>
@@ -124,6 +132,18 @@ export default function ExpertResponsesScreen() {
                         </View>
                       </View>
                       
+                      {/* 신뢰 지표 미니 영역 (가격보다 먼저, 발급 이력을 리뷰처럼 노출) */}
+                      {trustPills.length > 0 && (
+                        <View style={styles.trustPillRow}>
+                          {trustPills.map((p) => (
+                            <View key={p.text} style={styles.trustPill}>
+                              <Ionicons name={p.icon as any} size={12} color={theme.colors.primary} />
+                              <Text style={styles.trustPillText}>{p.text}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      )}
+
                       {/* Comment Bubble */}
                       <View style={styles.commentBubble}>
                         <Text style={styles.commentText} numberOfLines={3}>“{ex.comment}”</Text>
@@ -143,11 +163,13 @@ export default function ExpertResponsesScreen() {
                       ))}
                     </View>
 
-                    {/* Warranty Strip */}
+                    {/* Warranty / Trust Strip */}
                     <View style={styles.warrantyStrip}>
-                      <Ionicons name="shield-checkmark" size={17} color={hasWarranty ? theme.colors.success : theme.colors.textTertiary} />
-                      <Text style={styles.warrantyText}>
-                        {hasWarranty ? `${ex.warranty.type} · ${ex.warranty.period} 보증` : '사후관리 미제공'}
+                      <Ionicons name="checkmark-done" size={17} color={hasWarranty ? theme.colors.success : theme.colors.textTertiary} />
+                      <Text style={styles.warrantyText} numberOfLines={1}>
+                        {hasWarranty
+                          ? `${ex.warranty.type} 제공 · 확인 완료 ${ts.completedJobs ?? 0}건`
+                          : `확인 완료 ${ts.completedJobs ?? 0}건 · 확인서 발급은 적어요`}
                       </Text>
                       <View style={styles.detailRow}>
                         <Text style={styles.detailText}>상세 보기</Text>
@@ -162,6 +184,8 @@ export default function ExpertResponsesScreen() {
           </View>
         )}
       </ScrollView>
+
+      <ProcessBottomNav />
     </View>
   );
 }
@@ -172,7 +196,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
   scroll: { flex: 1 },
-  scrollContent: { paddingHorizontal: 24, paddingBottom: 40 },
+  scrollContent: { paddingHorizontal: 24, paddingBottom: 120 },
 
   h1: {
     ...theme.typography.h1,
@@ -312,6 +336,27 @@ const styles = StyleSheet.create({
   availText: {
     fontSize: 12,
     fontWeight: '700',
+  },
+  trustPillRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 7,
+    marginTop: 13,
+  },
+  trustPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: theme.colors.primaryLight,
+    borderRadius: theme.borderRadius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  trustPillText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: theme.colors.primary,
+    letterSpacing: -0.2,
   },
   commentBubble: {
     backgroundColor: theme.colors.surfaceMuted,

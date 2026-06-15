@@ -9,11 +9,63 @@ import { Badge } from '../components/Badge';
 import { Button } from '../components/Button';
 import { AppHeader } from '../components/Header';
 import { Skeleton } from '../components/Skeleton';
+import { ProcessBottomNav } from '../components/ProcessBottomNav';
+import { ProcessCta } from '../components/ProcessCta';
 import { ASSET } from '../data/mockData';
 import { getRecommendedPriceGuides } from '../data/repairPriceGuides';
+import { normalizeAiText } from '../utils/text';
 
 const GUIDE_ROTATE_MS = 2600;
 const GUIDE_FADE_MS = 220;
+
+// 체감 속도 개선: 진행 중인 작업을 단계적으로 보여준다.
+const LOADING_STAGES = [
+  '사진 속 문제 범위를 확인하고 있어요',
+  '필요한 공종을 추정하고 있어요',
+  '전문가에게 보낼 요청서를 정리하고 있어요',
+  '참고 비용 감각을 함께 확인하고 있어요',
+];
+const STAGE_ROTATE_MS = 2500;
+const SLOW_HINT_AFTER_MS = 15000; // 15초 이상이면 직접 작성 옵션 노출
+
+/** 단계형 로딩 헤더: 문구가 순차적으로 바뀌고, 오래 걸리면 직접 작성 CTA를 보여준다. */
+function AnalysisLoadingHeader({ onManual }: { onManual: () => void }) {
+  const [stage, setStage] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    const stageTimer = setInterval(() => {
+      setStage((s) => Math.min(s + 1, LOADING_STAGES.length - 1));
+    }, STAGE_ROTATE_MS);
+    const elapsedTimer = setInterval(() => setElapsed((e) => e + 1000), 1000);
+    return () => {
+      clearInterval(stageTimer);
+      clearInterval(elapsedTimer);
+    };
+  }, []);
+
+  const isSlow = elapsed >= SLOW_HINT_AFTER_MS;
+  const reachedLast = stage >= LOADING_STAGES.length - 1;
+  const title = isSlow && reachedLast ? '조금 더 확인 중이에요' : '요청서를 정리하고 있어요';
+
+  return (
+    <View>
+      <Text style={styles.h1}>{title}</Text>
+      <View style={styles.stageRow}>
+        <Ionicons name="sparkles" size={15} color={theme.colors.primary} />
+        <Text style={styles.stageText}>{LOADING_STAGES[stage]}</Text>
+      </View>
+      {isSlow && (
+        <View style={styles.slowBox}>
+          <Text style={styles.slowText}>
+            생각보다 오래 걸리고 있어요. 기다리기 어려우면 직접 요청서를 작성할 수 있어요.
+          </Text>
+          <Button title="직접 요청서 작성하기" variant="outline" size="sm" onPress={onManual} />
+        </View>
+      )}
+    </View>
+  );
+}
 
 /**
  * 로딩 중 참고 시세 영역.
@@ -140,7 +192,6 @@ export default function AnalysisScreen() {
 
   const isRejected = a?.status === 'REJECTED';
   const showLoading = isLoading || (!a && !error);
-  const showResult = !!a && !isRejected && !error;
 
   // 실제 Gemini 응답이 일부 필드를 누락해도 렌더가 깨지지 않도록 방어한다.
   const visibleEvidence = a?.visibleEvidence ?? [];
@@ -149,6 +200,8 @@ export default function AnalysisScreen() {
   const doNotAttempt = a?.selfCheckGuide?.doNotAttemptIf ?? [];
   const additionalQuestions = a?.additionalQuestions ?? [];
   const showAdditionalPhotos = !!a?.additionalPhotosNeeded || additionalQuestions.length > 0;
+  // 분석 신뢰도 미터(3칸)용 레벨.
+  const confLevel = a?.confidence === '높음' ? 3 : a?.confidence === '보통' ? 2 : 1;
 
   const formatPrice = (priceRange: string) => {
     const m = priceRange?.match(/(\d+)\D+(\d+)/);
@@ -165,15 +218,12 @@ export default function AnalysisScreen() {
 
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: showResult ? 150 : 40 }]}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 120 }]}
         showsVerticalScrollIndicator={false}
       >
         {showLoading ? (
           <View>
-            <Text style={styles.h1}>요청서를 정리하고 있어요</Text>
-            <Text style={styles.bodyText}>
-              사진 속 문제 범위와 필요한 공종을 확인 중입니다. 보통 10초 안에 끝나요.
-            </Text>
+            <AnalysisLoadingHeader onManual={handleManual} />
             <View style={{ marginVertical: 24, marginBottom: 28 }}>
               <Skeleton width="58%" height={16} style={{ marginBottom: 12 }} />
               <Skeleton width="90%" height={16} style={{ marginBottom: 12 }} />
@@ -225,12 +275,27 @@ export default function AnalysisScreen() {
 
             {/* 문제 후보 헤더 */}
             <View style={{ marginTop: 24 }}>
-              <Text style={styles.h1}>{a.problemCandidate}</Text>
+              <View style={styles.resultEyebrow}>
+                <Ionicons name="sparkles" size={13} color={theme.colors.primary} />
+                <Text style={styles.resultEyebrowText}>AI가 사진을 분석해 정리했어요</Text>
+              </View>
+              <Text style={styles.h1}>{normalizeAiText(a.problemCandidate)}</Text>
               <View style={styles.badgeRow}>
                 <Badge label={a.tradeCategory} variant="primary" icon="wrench" />
                 {a.visitRequired && <Badge label="방문 확인 필요" variant="warning" dot />}
-                <Badge label={`신뢰도 ${a.confidence}`} variant="neutral" dot />
                 {a.riskLevel === '높음' && <Badge label="위험도 높음" variant="danger" icon="warning" />}
+              </View>
+              {/* 분석 신뢰도 미터 */}
+              <View style={styles.confCard}>
+                <View style={styles.confTextRow}>
+                  <Text style={styles.confLabel}>분석 신뢰도</Text>
+                  <Text style={styles.confValue}>{a.confidence}</Text>
+                </View>
+                <View style={styles.confSegs}>
+                  {[1, 2, 3].map((i) => (
+                    <View key={i} style={[styles.confSeg, i <= confLevel && styles.confSegOn]} />
+                  ))}
+                </View>
               </View>
             </View>
 
@@ -241,7 +306,7 @@ export default function AnalysisScreen() {
                 <Text style={styles.h3}>전문가에게 전달할 요청 방향</Text>
               </View>
               <View style={styles.recommendationWrap}>
-                <Text style={styles.recommendationText}>{a.actionRecommendation}</Text>
+                <Text style={styles.recommendationText}>{normalizeAiText(a.actionRecommendation)}</Text>
               </View>
             </Card>
 
@@ -315,19 +380,19 @@ export default function AnalysisScreen() {
             </Card>
 
             <Text style={styles.bottomDisclaimer}>{a.disclaimer}</Text>
+
+            <ProcessCta>
+              <Button
+                title="이대로 요청서 확인하기"
+                onPress={() => router.push('/request-review')}
+                leftIcon={<Ionicons name="checkmark" size={20} color="#FFF" />}
+              />
+            </ProcessCta>
           </View>
         ) : null}
       </ScrollView>
 
-      {showResult && (
-        <View style={styles.footer}>
-          <Button
-            title="이대로 요청서 확인하기"
-            onPress={() => router.push('/request-review')}
-            leftIcon={<Ionicons name="checkmark" size={20} color="#FFF" />}
-          />
-        </View>
-      )}
+      <ProcessBottomNav />
     </View>
   );
 }
@@ -353,6 +418,30 @@ const styles = StyleSheet.create({
     ...theme.typography.body,
     color: theme.colors.textSecondary,
     marginTop: 8,
+  },
+  stageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+  },
+  stageText: {
+    ...theme.typography.body,
+    color: theme.colors.textSecondary,
+    flex: 1,
+  },
+  slowBox: {
+    marginTop: 18,
+    padding: 16,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.l,
+    gap: 12,
+    ...theme.shadows.soft,
+  },
+  slowText: {
+    ...theme.typography.caption,
+    color: theme.colors.textSecondary,
+    lineHeight: 20,
   },
 
   // Status (error / rejected) screen
@@ -562,11 +651,60 @@ const styles = StyleSheet.create({
     color: theme.colors.onDarkSoft,
   },
 
+  resultEyebrow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  resultEyebrowText: {
+    ...theme.typography.small,
+    color: theme.colors.primary,
+    fontWeight: '700',
+    letterSpacing: -0.1,
+  },
   badgeRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
     marginTop: 14,
+  },
+  confCard: {
+    marginTop: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.l,
+    ...theme.shadows.soft,
+  },
+  confTextRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  confLabel: {
+    ...theme.typography.caption,
+    color: theme.colors.textSecondary,
+    fontWeight: '700',
+  },
+  confValue: {
+    ...theme.typography.caption,
+    color: theme.colors.primary,
+    fontWeight: '800',
+  },
+  confSegs: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  confSeg: {
+    flex: 1,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: theme.colors.surfaceSoft,
+  },
+  confSegOn: {
+    backgroundColor: theme.colors.primary,
   },
 
   cardIconHeader: {

@@ -2,7 +2,7 @@ import React from 'react';
 import { ViewStyle, StyleProp } from 'react-native';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
 
-export type IconName = 'camera' | 'sparkle' | 'bolt' | 'shield' | 'check' | 'checkCircle' | 'chevronR' | 'chevronL' | 'close' | 'warning' | 'pin' | 'user' | 'plus' | 'star' | 'arrowR' | 'arrowUpR' | 'info' | 'image' | 'clock' | 'chat' | 'wrench' | 'home' | 'homeFill' | 'doc' | 'docFill' | 'chatFill' | 'person' | 'personFill' | 'bell' | 'receipt' | 'shield-checkmark' | 'checkmark' | 'notifications';
+export type IconName = 'camera' | 'sparkle' | 'bolt' | 'shield' | 'check' | 'checkCircle' | 'chevronR' | 'chevronL' | 'close' | 'warning' | 'pin' | 'user' | 'plus' | 'star' | 'arrowR' | 'arrowUp' | 'arrowUpR' | 'info' | 'image' | 'clock' | 'chat' | 'wrench' | 'home' | 'homeFill' | 'doc' | 'docFill' | 'chatFill' | 'person' | 'personFill' | 'bell' | 'receipt' | 'shield-checkmark' | 'checkmark' | 'notifications' | 'droplet' | 'plug' | 'brush' | 'window' | 'door' | 'grid' | 'trendingUp' | 'gift' | 'calendar' | 'heart' | 'thumbsUp' | 'search' | 'chevronDown' | 'medal' | 'quote';
 
 interface IconProps {
   name: IconName;
@@ -31,6 +31,7 @@ export function Icon({ name, size = 22, color = '#000', strokeWidth = 1.9, style
     plus: <Path {...p} d="M12 5.5v13M5.5 12h13"/>,
     star: <Path d="M12 3.5l2.5 5.2 5.7.8-4.1 4 1 5.7L12 16.5 6.9 19.2l1-5.7-4.1-4 5.7-.8z" fill={color} stroke="none"/>,
     arrowR: <Path {...p} d="M5 12h14M13 6l6 6-6 6"/>,
+    arrowUp: <Path {...p} d="M12 19V5M6 11l6-6 6 6"/>,
     arrowUpR: <Path {...p} d="M7 17L17 7M8 7h9v9"/>,
     info: <><Circle {...p} cx="12" cy="12" r="9"/><Path {...p} d="M12 11v5"/><Circle cx="12" cy="7.8" r="1" fill={color} stroke="none"/></>,
     image: <><Rect {...p} x="3.5" y="4.5" width="17" height="15" rx="3"/><Circle {...p} cx="8.5" cy="9.5" r="1.6"/><Path {...p} d="M4 17l4.5-4 3 2.6L15 11l5 5"/></>,
@@ -47,6 +48,22 @@ export function Icon({ name, size = 22, color = '#000', strokeWidth = 1.9, style
     bell: <><Path {...p} d="M6 9a6 6 0 0 1 12 0c0 5 1.6 6.5 1.6 6.5H4.4S6 14 6 9z"/><Path {...p} d="M10 19a2 2 0 0 0 4 0"/></>,
     receipt: <><Path {...p} d="M6 3.5h12v17l-2.2-1.4-2 1.4-1.8-1.4-1.8 1.4-2-1.4L6 20.5z"/><Path {...p} d="M9 8h6M9 11.5h6M9 15h4"/></>,
     
+    droplet: <Path {...p} d="M12 3.5c0 0 6 6.2 6 10.5a6 6 0 0 1-12 0C6 9.7 12 3.5 12 3.5z"/>,
+    plug: <><Path {...p} d="M9 3v4M15 3v4"/><Path {...p} d="M7 7h10v3.5a5 5 0 0 1-10 0z"/><Path {...p} d="M12 15.5V21"/></>,
+    brush: <><Rect {...p} x="4" y="4" width="11" height="5" rx="1.5"/><Path {...p} d="M15 6.5h3.5v3H15"/><Path {...p} d="M9.5 9v2.4a1.6 1.6 0 0 1-1.6 1.6A1.6 1.6 0 0 0 6.3 14.6V15"/><Rect {...p} x="5" y="15" width="3" height="5.5" rx="1"/></>,
+    window: <><Rect {...p} x="3.5" y="4.5" width="17" height="15" rx="2.5"/><Path {...p} d="M12 4.5v15M3.5 12h17"/></>,
+    door: <><Path {...p} d="M6 21V4.5a1.5 1.5 0 0 1 1.5-1.5h9A1.5 1.5 0 0 1 18 4.5V21"/><Path {...p} d="M4 21h16"/><Circle cx="14.8" cy="12" r="1" fill={color} stroke="none"/></>,
+    grid: <><Rect {...p} x="4" y="4" width="7" height="7" rx="1.8"/><Rect {...p} x="13" y="4" width="7" height="7" rx="1.8"/><Rect {...p} x="4" y="13" width="7" height="7" rx="1.8"/><Rect {...p} x="13" y="13" width="7" height="7" rx="1.8"/></>,
+    trendingUp: <><Path {...p} d="M3 16.5l5.5-5.5 3.5 3.5L20.5 7"/><Path {...p} d="M15.5 7h5v5"/></>,
+    gift: <><Rect {...p} x="3.5" y="8.5" width="17" height="4" rx="1.2"/><Path {...p} d="M5 12.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7.5"/><Path {...p} d="M12 8.5V21"/><Path {...p} d="M12 8.5S10.4 4 7.9 4.9 9.5 8.5 12 8.5zM12 8.5S13.6 4 16.1 4.9 14.5 8.5 12 8.5z"/></>,
+    calendar: <><Rect {...p} x="4" y="5" width="16" height="16" rx="2.5"/><Path {...p} d="M4 9.5h16M8.5 3v4M15.5 3v4"/></>,
+    heart: <Path {...p} d="M12 20s-7-4.4-9.2-9A4.7 4.7 0 0 1 12 6.5 4.7 4.7 0 0 1 21.2 11C19 15.6 12 20 12 20z"/>,
+    thumbsUp: <><Path {...p} d="M7 11l4-7a2.2 2.2 0 0 1 2 2.2V10h5.2a2 2 0 0 1 2 2.4l-1.3 6A2 2 0 0 1 16.9 20H7z"/><Rect {...p} x="3.5" y="11" width="3.5" height="9" rx="1"/></>,
+    search: <><Circle {...p} cx="11" cy="11" r="6.5"/><Path {...p} d="M16 16l4.5 4.5"/></>,
+    chevronDown: <Path {...p} d="M5 9l7 7 7-7"/>,
+    medal: <><Circle {...p} cx="12" cy="14.5" r="5"/><Path {...p} d="M8.5 10L6 3.5M15.5 10L18 3.5M10 3.5h4"/><Path {...p} d="M12 12.6l.9 1.7 1.9.3-1.4 1.3.3 1.9-1.7-.9-1.7.9.3-1.9-1.4-1.3 1.9-.3z" fill={color} stroke="none"/></>,
+    quote: <Path d="M6.5 6C4.6 7.2 3.5 9.2 3.5 11.8V18h6v-6.2H6.4c0-1.3.6-2.4 1.8-3.2zM16.5 6c-1.9 1.2-3 3.2-3 5.8V18h6v-6.2h-3.1c0-1.3.6-2.4 1.8-3.2z" fill={color} stroke="none"/>,
+
     // aliases from Ionicons used earlier
     'shield-checkmark': <><Path {...p} d="M12 3l7 2.5v5.2c0 4.6-3 8-7 9.8-4-1.8-7-5.2-7-9.8V5.5z"/><Path {...p} d="M9 12l2 2 4-4.2"/></>,
     'checkmark': <Path {...p} d="M5 12.5l4.2 4.2L19 7"/>,

@@ -6,8 +6,23 @@ import { Card } from '../../components/Card';
 import { Badge } from '../../components/Badge';
 import { Icon, IconName } from '../../components/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
+import { MOCK_REQUESTS } from '../../data/mockData';
+import { useRequest } from '../../context/RequestContext';
 
 export default function ProfileScreen() {
+  const { consultations } = useRequest();
+  const activeCount = MOCK_REQUESTS.filter((r: any) => r.status !== 'completed').length;
+  const doneCount = MOCK_REQUESTS.filter((r: any) => r.status === 'completed').length;
+  const chatCount = consultations.length + 2; // 기존 Mock 채팅 2건 포함
+
+  const stats: { value: string; label: string; onPress: () => void }[] = [
+    { value: String(MOCK_REQUESTS.length), label: '전체 요청', onPress: () => router.push('/history') },
+    { value: String(activeCount), label: '진행 중', onPress: () => router.push('/history') },
+    { value: String(chatCount), label: '상담', onPress: () => router.push('/chats') },
+    { value: String(doneCount), label: '완료', onPress: () => router.push('/history') },
+  ];
+
   const menu: [string, IconName, string][] = [
     ['고치다 사용법', 'sparkle', '사진 한 장으로 요청서를 만드는 방법을 안내해요.'],
     ['작업 확인서 · 보증서 안내', 'shield', '작업 확인서와 안심 보증서가 무엇을 보장하는지 설명해요.'],
@@ -33,6 +48,21 @@ export default function ProfileScreen() {
           </View>
           <Badge label="DEMO" variant="primary" />
         </Card>
+
+        {/* Activity Stats */}
+        <Card radius={theme.borderRadius.xxl} pad={18} style={styles.statsCard}>
+          {stats.map((s, i) => (
+            <React.Fragment key={s.label}>
+              <Pressable style={styles.statItem} onPress={s.onPress} hitSlop={6}>
+                <Text style={styles.statValue}>{s.value}</Text>
+                <Text style={styles.statLabel}>{s.label}</Text>
+              </Pressable>
+              {i < stats.length - 1 && <View style={styles.statDivider} />}
+            </React.Fragment>
+          ))}
+        </Card>
+
+        <Text style={styles.menuGroupLabel}>도움말 · 안내</Text>
 
         {/* Menu List */}
         <Card radius={theme.borderRadius.xxl} pad={6} style={{ paddingHorizontal: 8 }}>
@@ -77,7 +107,41 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 15,
-    marginBottom: 22,
+    marginBottom: 14,
+  },
+  statsCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 4,
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: theme.colors.primary,
+    letterSpacing: -0.4,
+  },
+  statLabel: {
+    fontSize: 11,
+    color: theme.colors.textSecondary,
+    fontWeight: '500',
+  },
+  statDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: theme.colors.divider,
+  },
+  menuGroupLabel: {
+    ...theme.typography.caption,
+    fontWeight: '700',
+    color: theme.colors.textTertiary,
+    marginBottom: 12,
+    marginLeft: 4,
   },
   userAvatar: {
     width: 58,

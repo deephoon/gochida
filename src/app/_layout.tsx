@@ -28,6 +28,8 @@ export default function RootLayout() {
         <Stack.Screen name="request-review" options={{ headerShown: false }} />
         <Stack.Screen name="expert-responses" options={{ headerShown: false }} />
         <Stack.Screen name="expert/[id]" options={{ headerShown: false }} />
+        <Stack.Screen name="consultation/[expertId]" options={{ headerShown: false }} />
+        <Stack.Screen name="chat/[id]" options={{ headerShown: false }} />
       </Stack>
     </RequestProvider>
   );

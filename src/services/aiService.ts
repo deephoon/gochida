@@ -32,107 +32,46 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AIRepairAnalysis } from '../types';
 import { buildMockAnalysis, getSuggestedPriceGuide } from '../data/mockData';
+import { normalizeAiText, splitSentences } from '../utils/text';
+
+// 프롬프트/스키마 버전. 응답 로그 추적용 (변경 시 올린다).
+const PROMPT_VERSION = 'v2-2026-06';
 
 // ==========================================
-// 3. 주석 코드: 실제 로직 작성 및 프롬프트 정의
+// 3. 프롬프트 정의 (요청서 작성 보조자)
 // ==========================================
+// 응답 속도를 위해 규칙과 JSON 스키마 중심으로 압축한다. (장문 설명 최소화)
 
-const buildPrompt = (location: string, symptom: string, imageCount: number) => `
-너는 대한민국 주거 환경의 생활시공 요청을 전문가에게 전달하기 쉽게 정리하는 AI 요청서 작성 보조자다.
-너는 최종 진단자가 아니며, 확정 견적을 제공하지 않는다.
+const buildPrompt = (location: string, symptom: string, imageCount: number) => `너는 대한민국 주거 생활시공 분야의 베테랑 견적 코디네이터다. 사진과 사용자 입력을 분석해, 해당 공종 전문가가 "추가 질문 없이도 작업 범위를 가늠할 수 있는" 수준의 전문가용 요청서를 작성한다. 진단·확정견적은 하지 않되, 누구나 쓸 수 있는 두루뭉술한 일반론은 절대 금지한다.
 
-사용자 입력:
-- 위치: ${location}
-- 증상: ${symptom}
-- 첨부 이미지 수: ${imageCount}
+[입력] 위치:${location || '미입력'} / 증상:${symptom || '미입력'} / 이미지:${imageCount}장
 
-서비스 목적:
-사용자가 문제를 정확히 설명하지 못해도, 사진과 선택 입력을 바탕으로 전문가가 이해할 수 있는 생활시공 요청서 초안을 정리한다.
+[분석 원칙]
+1. 먼저 사진 단서로 공종(tradeCategory)과 "의심 부품/부위"를 구체적으로 특정하라. 막연히 "OO 점검"이 아니라 어느 부품이 어떤 메커니즘으로 문제인지 좁혀라. (예: 방충망 "망 자체 찢어짐" vs "롤러/프레임 변형", 수전 "카트리지·패킹 노후" vs "벽 매립배관", 누수 "위생도기 실링" vs "방수층 손상")
+2. visibleEvidence: 사진에서 실제로 보이는 단서만, 공종 용어로 구체적으로 적어라. 보이지 않는데 추측한 내용은 금지(그건 uncertainty로).
+3. uncertainty: 사진만으로 확정 못 하는 부분과 그 이유.
+4. 위험공종(전기·누수·배관·구조균열·가스·화재·고소)은 riskLevel "높음", 자가수리 권장 금지(doNotAttemptIf에 명시).
+5. 생활시공과 무관(인물/음식/풍경/문서 등)하거나 문제부위가 안 보이면 status="REJECTED"+rejection_reason. 흐리지만 일부 판단 가능하면 additionalPhotosNeeded=true.
+6. tradeCategory 예: 방충망/창호, 욕실 실리콘, 수전/위생기구, 문/문틀, 도배/벽지, 전기/조명, 누수/배관, 가구/수납 보수, 기타 생활시공.
 
-중요 원칙:
-1. 너는 최종 진단자가 아니다. "진단"이 아니라 "요청서 정리"를 수행한다.
-2. 너는 확정 견적을 제공하지 않는다. 비용은 참고 수준의 감각으로만 표현한다.
-3. 사진에서 보이는 내용만 근거로 삼는다. 보이는 근거는 visibleEvidence에 적는다.
-4. 사진만으로 보이지 않거나 단정할 수 없는 부분은 uncertainty에 적고, 절대 단정하지 않는다.
-5. 위험한 작업은 사용자가 직접 시도하지 않도록 안내한다. 자가 수리 방법을 상세히 알려주지 않는다.
-6. 최종 작업 범위와 비용은 전문가 상담 후 결정된다는 취지를 disclaimer에 포함한다.
-7. 생활시공과 무관한 사진은 REJECTED로 처리한다.
-8. 반드시 순수 JSON만 반환한다.
+[요청서 품질 — 가장 중요]
+requestDraft.message는 "상황을 잘 아는 사람이 대신 정리해 준" 느낌의 자연스러운 존댓말 3~5문장이어야 한다. 다음을 반드시 녹여라:
+- 의심 부품/부위와 증상을 구체적으로
+- 가능성 있는 작업 방식 1~2가지(예: 부분 교체 vs 전체 교체)와, 무엇을 보고 결정하면 되는지
+- 전문가가 방문/견적 전에 확인하면 좋은 포인트
+- 관련될 수 있는 부품/자재가 있으면 언급
+"점검 부탁드립니다", "확인 후 안내 부탁드립니다" 같은 일반론만으로 채우지 마라.
+- requestDraft.title: "위치+의심 문제+요청 유형" (예: "욕실 세면대 하부 누수 점검·배관 보수 요청")
+- structured.suspected_issue: 의심 부품 + 고장 메커니즘
+- structured.requested_work: 구체적 작업 옵션 (예: "방충망 망 교체(미세망/일반망 택1) 또는 롤러·프레임 동반 보수 여부 확인")
+- structured.additional_note: 작업 범위를 좁히는 데 도움 되는 정보(접근성/크기·개수/발생 시점 등) 안내
+- additionalQuestions: 그 공종에 특화된, 견적 범위를 좁히는 질문만
 
-처리 범위 (Scope):
-- 생활시공, 집수리, 보수 요청과 관련된 사진만 처리한다.
-- 사람 얼굴, 음식, 풍경, 문서, 반려동물 등 생활시공과 무관한 사진은 status를 "REJECTED"로 설정하고 rejection_reason에 사유를 적는다.
-- 사진이 지나치게 흐리거나 문제 부위가 보이지 않으면 REJECTED로 처리하거나, 부분적으로 판단 가능하면 additionalPhotosNeeded를 true로 설정하고 additionalQuestions에 필요한 추가 사진을 0~3개 적는다.
+[비용] costSense는 "소규모/중간 규모 작업 가능성" 수준의 감각으로만. "확정 견적/최저가" 금지.
+[배열 길이] visibleEvidence≤4, uncertainty≤3, selfCheckGuide.steps≤3, doNotAttemptIf≤3, additionalQuestions≤3.
 
-공종 분류 (tradeCategory) 예시:
-- 방충망/창호
-- 욕실 실리콘
-- 수전/위생기구
-- 문/문틀
-- 도배/벽지
-- 전기/조명
-- 누수/배관
-- 가구/수납 보수
-- 기타 생활시공
-
-위험 공종 기준 (Safety-first):
-- 전기 합선, 노출 전선, 차단기 문제
-- 심한 누수, 배관 파손
-- 구조 균열, 천장 처짐
-- 가스, 화재, 고소 작업 가능성
-위 항목에 해당하면 riskLevel을 "높음"으로 판단하고, selfCheckGuide.available을 false로 설정하거나 doNotAttemptIf에 해당 상황을 명확히 적는다. 자가 수리를 권장하지 말고 전문가 확인을 안내한다.
-
-비용 표현 규칙 (Cost Safety):
-- costSense는 확정 금액이 아니라 "소규모 작업 가능성", "중간 규모 작업 가능성"처럼 비용 감각으로 표현한다.
-- 금액 범위가 필요하면 "약 n만 ~ n만 원" 형태의 참고 수준으로만 적는다.
-- "확정 견적", "최저가 보장" 같은 표현은 절대 사용하지 않는다.
-
-요청서 작성 규칙 (Expert Request Quality):
-- requestDraft.title은 전문가가 한눈에 이해할 수 있게 "위치 + 문제 + 요청 유형" 형태로 작성한다. (예: "베란다 방충망 파손 점검/보수 요청")
-- requestDraft.message는 사용자가 그대로 전문가에게 보낼 수 있는 자연스러운 한국어 존댓말 문장으로 작성한다.
-- requestDraft.structured는 location, symptom, suspected_issue, requested_work, additional_note를 반드시 모두 포함한다.
-- requested_work는 "교체 요청", "점검 요청", "보수 요청", "현장 확인 요청"처럼 전문가의 작업 방향으로 정리한다.
-
-출력 규칙 (Output Strictness):
-- 반드시 순수 JSON 문자열만 반환한다.
-- 마크다운 코드 펜스(\`\`\`)를 포함하지 않는다.
-- 설명 문장, 주석, prefix, suffix를 붙이지 않는다.
-- 아래 스키마의 모든 필드를 누락 없이 반환한다.
-
-반환 JSON 스키마:
-{
-  "status": "SUCCESS | REJECTED",
-  "rejection_reason": "",
-  "problemCandidate": "",
-  "tradeCategory": "",
-  "confidence": "낮음 | 보통 | 높음",
-  "visibleEvidence": [],
-  "uncertainty": [],
-  "riskLevel": "낮음 | 보통 | 높음",
-  "visitRequired": true,
-  "costSense": "",
-  "actionRecommendation": "",
-  "selfCheckGuide": {
-    "available": true,
-    "steps": [],
-    "doNotAttemptIf": []
-  },
-  "additionalQuestions": [],
-  "additionalPhotosNeeded": false,
-  "requestDraft": {
-    "title": "",
-    "message": "",
-    "structured": {
-      "location": "",
-      "symptom": "",
-      "suspected_issue": "",
-      "requested_work": "",
-      "additional_note": ""
-    }
-  },
-  "disclaimer": "사진과 입력 정보를 바탕으로 정리한 요청서 초안이며, 실제 작업 범위와 비용은 전문가 확인 후 달라질 수 있습니다."
-}
-`;
+[출력] 순수 JSON만. 마크다운 펜스/설명/접두사 금지. 아래 스키마 전 필드 포함:
+{"status":"SUCCESS|REJECTED","rejection_reason":"","problemCandidate":"","tradeCategory":"","confidence":"낮음|보통|높음","visibleEvidence":[],"uncertainty":[],"riskLevel":"낮음|보통|높음","visitRequired":true,"costSense":"","actionRecommendation":"","selfCheckGuide":{"available":true,"steps":[],"doNotAttemptIf":[]},"additionalQuestions":[],"additionalPhotosNeeded":false,"requestDraft":{"title":"","message":"","structured":{"location":"","symptom":"","suspected_issue":"","requested_work":"","additional_note":""}},"disclaimer":"사진과 입력 정보를 바탕으로 정리한 요청서 초안이며, 최종 작업 범위와 비용은 전문가 확인 후 결정됩니다."}`;
 
 // 마크다운 펜스 제거 후, 응답에 부가 텍스트가 섞여 있어도 첫 '{'부터 마지막 '}'까지를
 // JSON 본문으로 간주해 파싱 성공률을 높인다.
@@ -149,8 +88,19 @@ const FALLBACK_DISCLAIMER =
 
 const LEVELS = ['낮음', '보통', '높음'] as const;
 
-const asStringArray = (v: unknown): string[] =>
-  Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
+// 배열 필드를 문자열만 남기고 정규화 후 최대 길이로 자른다. (응답이 길어 가독성을 해치는 것 방지)
+const asStringArray = (v: unknown, max?: number): string[] => {
+  const list = Array.isArray(v)
+    ? v.filter((x): x is string => typeof x === 'string').map((x) => normalizeAiText(x)).filter(Boolean)
+    : [];
+  return typeof max === 'number' ? list.slice(0, max) : list;
+};
+
+// requestDraft.message를 정규화하고 3~5문장으로 제한한다.
+const limitMessage = (raw: string): string => {
+  const sentences = splitSentences(raw, 5);
+  return sentences.length > 0 ? sentences.join(' ') : normalizeAiText(raw);
+};
 
 const asLevel = (v: unknown, fallback: '낮음' | '보통' | '높음') =>
   LEVELS.includes(v as any) ? (v as '낮음' | '보통' | '높음') : fallback;
@@ -169,27 +119,27 @@ const normalizeAnalysis = (raw: any, location: string, symptom: string): AIRepai
     rejection_reason: typeof raw?.rejection_reason === 'string' && raw.rejection_reason
       ? raw.rejection_reason
       : undefined,
-    problemCandidate: raw?.problemCandidate || `${loc} ${sym} 전문가 확인 필요`,
+    problemCandidate: normalizeAiText(raw?.problemCandidate) || `${loc} ${sym} 전문가 확인 필요`,
     tradeCategory: raw?.tradeCategory || '기타 생활시공',
     confidence: asLevel(raw?.confidence, '낮음'),
-    visibleEvidence: asStringArray(raw?.visibleEvidence),
-    uncertainty: asStringArray(raw?.uncertainty),
+    visibleEvidence: asStringArray(raw?.visibleEvidence, 4),
+    uncertainty: asStringArray(raw?.uncertainty, 3),
     riskLevel: asLevel(raw?.riskLevel, '보통'),
     visitRequired: typeof raw?.visitRequired === 'boolean' ? raw.visitRequired : true,
-    costSense: raw?.costSense || '전문가 확인 후 안내',
-    actionRecommendation: raw?.actionRecommendation || '전문가 현장 확인 요청',
+    costSense: normalizeAiText(raw?.costSense) || '전문가 확인 후 안내',
+    actionRecommendation: normalizeAiText(raw?.actionRecommendation) || '전문가 현장 확인 요청',
     selfCheckGuide: {
       available: raw?.selfCheckGuide?.available === true,
-      steps: asStringArray(raw?.selfCheckGuide?.steps),
-      doNotAttemptIf: asStringArray(raw?.selfCheckGuide?.doNotAttemptIf),
+      steps: asStringArray(raw?.selfCheckGuide?.steps, 3),
+      doNotAttemptIf: asStringArray(raw?.selfCheckGuide?.doNotAttemptIf, 3),
     },
-    additionalQuestions: asStringArray(raw?.additionalQuestions),
+    additionalQuestions: asStringArray(raw?.additionalQuestions, 3),
     additionalPhotosNeeded: raw?.additionalPhotosNeeded === true,
     requestDraft: {
-      title: raw?.requestDraft?.title || `${loc} ${sym} 점검/보수 요청`,
-      message:
-        raw?.requestDraft?.message ||
-        `${loc}에서 ${sym} 증상이 있어 점검을 요청드립니다. 정확한 작업 범위는 확인 후 안내 부탁드립니다.`,
+      title: normalizeAiText(raw?.requestDraft?.title) || `${loc} ${sym} 점검/보수 요청`,
+      message: raw?.requestDraft?.message
+        ? limitMessage(raw.requestDraft.message)
+        : `${loc}에서 ${sym} 증상이 있어 점검을 요청드립니다. 정확한 작업 범위는 확인 후 안내 부탁드립니다.`,
       structured: {
         location: structured.location || `${loc} · ${sym}`,
         symptom: structured.symptom || sym,
@@ -213,7 +163,21 @@ const callGeminiWithEdgeCases = async (
   imageBase64s: string[]
 ): Promise<AIRepairAnalysis> => {
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-2.5-flash',
+    generationConfig: {
+      // JSON 응답이므로 mime을 지정해 펜스/잡음 없는 순수 JSON 유도 → 파싱 안정 + 속도.
+      responseMimeType: 'application/json',
+      // gemini-2.5-flash는 thinking 모델이라 thinking 토큰이 maxOutputTokens에 함께 카운트된다.
+      // thinking을 완전히 끄면 빠르지만 사진을 깊이 분석하지 못해 요청서가 일반론으로 흐른다.
+      // 적당한 thinking 예산(512)을 주면 공종/부품을 더 정확히 좁혀 "전문가용 요청서" 품질이 올라가고,
+      // maxOutputTokens는 thinking(512)+한국어 본문을 모두 담도록 넉넉히 잡아 truncation을 막는다.
+      // (실측: 512예산+3072토큰 ≈ 7초, 완전한 JSON, 일반론 대비 부품·작업옵션이 구체적)
+      thinkingConfig: { thinkingBudget: 512 },
+      maxOutputTokens: 3072,
+      temperature: 0.5,
+    } as any,
+  });
 
   const imageParts = imageBase64s
     .filter((b) => !!b)
@@ -230,14 +194,22 @@ const callGeminiWithEdgeCases = async (
   );
 
   try {
-    console.log('[Gochida AI] calling Gemini API...');
+    console.log(`[Gochida AI] calling Gemini API... (prompt ${PROMPT_VERSION}, images: ${imageParts.length})`);
     const result = await Promise.race([
       model.generateContent([prompt, ...imageParts]),
       timeoutPromise
     ]);
 
-    console.log('[Gochida AI] Gemini response received');
-    const cleaned = stripJsonFences(result.response.text());
+    // 방어: thinking 토큰 소진/세이프티 등으로 본문이 비거나 잘리면 파싱 전에 걸러
+    // 사용자에게 모호한 파싱 오류 대신 재시도 가능한 메시지를 준다.
+    const finishReason = result.response.candidates?.[0]?.finishReason;
+    const rawText = result.response.text();
+    console.log(`[Gochida AI] Gemini response received (finishReason=${finishReason}, len=${rawText?.length ?? 0})`);
+    if (!rawText || !rawText.trim() || finishReason === 'MAX_TOKENS') {
+      console.warn('[Gochida AI] empty/truncated response. finishReason:', finishReason);
+      throw new Error('요청서 정리 결과가 완성되지 않았어요. 다시 시도해 주세요.');
+    }
+    const cleaned = stripJsonFences(rawText);
 
     try {
       // 누락 필드/타입 오류를 보정해 UI crash를 방지한다.
@@ -259,9 +231,15 @@ const callGeminiWithEdgeCases = async (
     if (error.message === 'TIMEOUT_ERROR') {
       throw new Error('AI 분석 응답 시간이 초과되었습니다. 다시 시도해주세요.');
     }
-    // 2) 429 Rate Limit 에러 처리 (Gemini API 에러 응답 파싱)
-    if (error.status === 429 || (error.message && error.message.includes('429'))) {
-      throw new Error('현재 이용량이 많아 분석이 지연되고 있습니다. 잠시 후 시도해주세요. (Rate Limit)');
+    // 2) 429 Rate Limit / 할당량 초과 (무료 티어 일일 한도 포함)
+    //    상위(analyzeImage)에서 Mock fallback으로 처리하도록 code로 태깅해 전달한다.
+    if (
+      error.status === 429 ||
+      (error.message && (error.message.includes('429') || error.message.toLowerCase().includes('quota')))
+    ) {
+      const rl: any = new Error('현재 이용량이 많아 분석이 지연되고 있습니다. (Rate Limit)');
+      rl.code = 'RATE_LIMIT';
+      throw rl;
     }
     // 3) 내부에서 이미 사용자용 메시지로 가공한 에러는 그대로 전달 (이중 래핑 방지)
     if (error.message && error.message.includes('요청서 정리 결과')) {
@@ -291,21 +269,37 @@ export const analyzeImage = async (
   console.log(`[Gochida AI] useMockAI: ${useMock}`);
   console.log(`[Gochida AI] hasApiKey: ${!!apiKey}`);
 
+  // Mock 시연이 답답하지 않도록 지연을 1.2~1.8초 수준으로 줄인다.
+  const MOCK_DELAY_MS = 1500;
+
   if (useMock) {
     console.log('[Gochida AI] Falling back to mock because EXPO_PUBLIC_USE_MOCK_AI is true.');
-    await new Promise((r) => setTimeout(r, 2000));
+    await new Promise((r) => setTimeout(r, MOCK_DELAY_MS));
     const mockData = buildMockAnalysis(location, symptom);
     return { ...mockData, status: 'SUCCESS' } as AIRepairAnalysis;
   }
 
   if (!apiKey) {
     console.warn('[Gochida AI] Missing Gemini API key. Falling back to mock analysis.');
-    await new Promise((r) => setTimeout(r, 2000));
+    await new Promise((r) => setTimeout(r, MOCK_DELAY_MS));
     const mockData = buildMockAnalysis(location, symptom);
     return { ...mockData, status: 'SUCCESS' } as AIRepairAnalysis;
   }
 
-  return await callGeminiWithEdgeCases(apiKey, location, symptom, validBase64s);
+  try {
+    return await callGeminiWithEdgeCases(apiKey, location, symptom, validBase64s);
+  } catch (error: any) {
+    // 무료 티어 일일 한도(20건/일) 등 할당량 초과(429)는 "오늘은 호출 불가" 상태다.
+    // 이때 막다른 에러로 사용자를 멈추게 하지 않고, 사진/입력 기반 Mock 요청서로
+    // graceful degradation 한다. (느려서 숨기는 게 아니라, 호출이 불가능할 때의 대체)
+    if (error?.code === 'RATE_LIMIT') {
+      console.warn('[Gochida AI] Gemini 할당량 초과 → Mock 요청서로 대체합니다. (무료 티어 일일 한도일 수 있음)');
+      await new Promise((r) => setTimeout(r, MOCK_DELAY_MS));
+      const mockData = buildMockAnalysis(location, symptom);
+      return { ...mockData, status: 'SUCCESS' } as AIRepairAnalysis;
+    }
+    throw error;
+  }
 };
 
 // ==========================================

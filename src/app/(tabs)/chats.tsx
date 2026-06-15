@@ -1,40 +1,69 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { useRouter } from 'expo-router';
 import { theme } from '../../theme';
 import { TabHeader } from '../../components/Header';
 import { Badge } from '../../components/Badge';
 import { Icon } from '../../components/Icon';
 import { MOCK_CHATS } from '../../data/mockData';
+import { useRequest } from '../../context/RequestContext';
 
 export default function ChatsScreen() {
-  const handleOpenChat = () => {
-    Alert.alert('MVP 범위 외 기능입니다.', '실제 서비스에서는 전문가와의 채팅 상담으로 연결됩니다.');
+  const router = useRouter();
+  const { consultations } = useRequest();
+
+  // 사용자가 시작한 상담방을 목록 상단에 노출하고, 기존 Mock 채팅을 이어 보여준다.
+  const chatList = useMemo(() => {
+    const started = consultations.map((c) => ({
+      id: c.id,
+      expertName: c.expertName,
+      requestTitle: c.requestTitle,
+      lastMessage: c.lastMessage,
+      timeText: c.timeText,
+      warrantyType: c.warrantyType,
+      unread: c.unread,
+      isNew: true,
+    }));
+    return [...started, ...MOCK_CHATS.map((c: any) => ({ ...c, isNew: false }))];
+  }, [consultations]);
+
+  const handleOpenChat = (id: string) => {
+    router.push(`/chat/${id}`);
   };
 
   return (
     <View style={styles.container}>
       <TabHeader title="채팅" subtitle="전문가와 나눈 상담 내역" />
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {MOCK_CHATS.map((c: any) => (
-          <Pressable key={c.id} style={styles.chatRow} onPress={handleOpenChat}>
+        {chatList.map((c: any) => (
+          <Pressable key={c.id} style={styles.chatRow} onPress={() => handleOpenChat(c.id)}>
             <View style={styles.avatarWrap}>
               <Icon name="user" size={26} color={theme.colors.primary} />
               {c.unread > 0 && <View style={styles.unreadBadge} />}
             </View>
             <View style={styles.chatContent}>
               <View style={styles.chatHeader}>
-                <Text style={styles.expertName} numberOfLines={1}>{c.expertName}</Text>
+                <View style={styles.nameWrap}>
+                  <Text style={styles.expertName} numberOfLines={1}>{c.expertName}</Text>
+                  {c.isNew && (
+                    <View style={styles.newTag}>
+                      <Text style={styles.newTagText}>상담 시작</Text>
+                    </View>
+                  )}
+                </View>
                 <Text style={styles.timeText}>{c.timeText}</Text>
               </View>
               <Text style={styles.requestTitle} numberOfLines={1}>{c.requestTitle}</Text>
               <View style={styles.chatFooter}>
-                <Text 
-                  style={[styles.lastMessage, c.unread > 0 && styles.lastMessageUnread]} 
+                <Text
+                  style={[styles.lastMessage, c.unread > 0 && styles.lastMessageUnread]}
                   numberOfLines={1}
                 >
                   {c.lastMessage}
                 </Text>
-                <Badge label={c.warrantyType} variant={c.warrantyType === '안심 보증서' ? 'success' : 'neutral'} />
+                {c.warrantyType && c.warrantyType !== '없음' && (
+                  <Badge label={c.warrantyType} variant={c.warrantyType === '안심 보증서' ? 'success' : 'neutral'} />
+                )}
               </View>
             </View>
           </Pressable>
@@ -96,10 +125,27 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 8,
   },
+  nameWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+  },
   expertName: {
     ...theme.typography.bodyStrong,
     color: theme.colors.textPrimary,
-    flex: 1,
+    flexShrink: 1,
+  },
+  newTag: {
+    backgroundColor: theme.colors.primaryLight,
+    borderRadius: theme.borderRadius.pill,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
+  newTagText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: theme.colors.primary,
   },
   timeText: {
     ...theme.typography.small,
