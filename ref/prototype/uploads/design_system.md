@@ -16,7 +16,7 @@
 
 ## 2. Color Palette (색상 규격)
 
-전체 색상은 `src/theme/index.ts`의 `palette` 객체에 정의되어 있습니다. 
+전체 색상은 `src/theme/index.ts`의 `palette` 객체에 정의되어 있습니다.
 
 ### Brand Colors
 - **Primary (Blue)**: `#5B6CFF` - 서비스의 메인 컬러. CTA 버튼, 현재 진행 중인 상태, 긍정적인 강조(추천 조치 등)에 사용합니다.
@@ -69,7 +69,7 @@
 ### 5.1 Card (카드)
 - **Background**: `theme.colors.white`
 - **Border Radius**: `24px` 또는 `32px` (매우 둥근 모서리)
-- **Shadow**: 
+- **Shadow**:
   - 기본 카드: `shadowColor: '#000', opacity: 0.04, radius: 12, elevation: 2` (매우 옅은 그림자로 떠오른 느낌만 줌)
   - 다크 프리미엄 카드: `shadowColor: '#000', opacity: 0.08, radius: 24, elevation: 4`
 - **Border**: 선을 사용하지 않는 것을 원칙으로 하나, 아주 옅은 구분선이 필요할 경우 `rgba(0,0,0,0.04)`를 사용합니다.

@@ -30,7 +30,7 @@ const palette = {
   surfaceMuted: '#F9F9F9',
   surfaceSoft: '#F0F0F3',
   premiumDark: '#1E2335',
-  
+
   white: '#FFFFFF',
   black: '#111111',
   blackMuted: '#1C1C1E',

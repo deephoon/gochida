@@ -70,7 +70,7 @@ export default function HistoryScreen() {
         {active.map((r: any) => (
           <RequestCard key={r.id} req={r} onPress={() => handleOpenRequest(r.status)} onCompare={handleCompare} />
         ))}
-        
+
         <Text style={[styles.sectionHeader, { marginTop: 18 }]}>완료 {done.length}</Text>
         {done.map((r: any) => (
           <RequestCard key={r.id} req={r} onPress={() => handleOpenRequest(r.status)} onCompare={handleCompare} />

@@ -82,7 +82,7 @@ export default function ExpertDetailScreen() {
       <AppHeader title="전문가 상세" onBack={() => router.back()} />
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        
+
         {/* Profile */}
         <View style={styles.profileRow}>
           <View style={styles.avatarWrap}>
@@ -141,7 +141,7 @@ export default function ExpertDetailScreen() {
               {ex.warranty.period && <Text style={styles.warrantyPeriod}>보증 기간 {ex.warranty.period}</Text>}
             </View>
           </View>
-          
+
           <Text style={[styles.warrantyDesc, { marginBottom: ex.warranty.includedCare.length ? 14 : 0 }]}>
             {ex.warranty.description}
           </Text>

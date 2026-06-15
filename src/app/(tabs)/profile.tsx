@@ -36,7 +36,7 @@ export default function ProfileScreen() {
     <View style={styles.container}>
       <TabHeader title="내 정보" />
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        
+
         {/* User Card */}
         <Card radius={theme.borderRadius.xxl} pad={20} style={styles.userCard}>
           <LinearGradient colors={['#6E7BFF', theme.colors.primary]} style={styles.userAvatar}>
@@ -67,8 +67,8 @@ export default function ProfileScreen() {
         {/* Menu List */}
         <Card radius={theme.borderRadius.xxl} pad={6} style={{ paddingHorizontal: 8 }}>
           {menu.map(([label, icon, msg], i) => (
-            <Pressable 
-              key={label} 
+            <Pressable
+              key={label}
               style={[styles.menuItem, i < menu.length - 1 && styles.menuItemBorder]}
               onPress={() => Alert.alert(label, msg)}
             >

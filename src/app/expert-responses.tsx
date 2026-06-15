@@ -131,7 +131,7 @@ export default function ExpertResponsesScreen() {
                           </Text>
                         </View>
                       </View>
-                      
+
                       {/* 신뢰 지표 미니 영역 (가격보다 먼저, 발급 이력을 리뷰처럼 노출) */}
                       {trustPills.length > 0 && (
                         <View style={styles.trustPillRow}>
@@ -179,7 +179,7 @@ export default function ExpertResponsesScreen() {
                 </Card>
               );
             })}
-            
+
             <Text style={styles.bottomDisclaimer}>최종 작업 범위와 비용은 전문가 상담 후 결정됩니다.</Text>
           </View>
         )}

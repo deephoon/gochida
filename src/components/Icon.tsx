@@ -14,7 +14,7 @@ interface IconProps {
 
 export function Icon({ name, size = 22, color = '#000', strokeWidth = 1.9, style }: IconProps) {
   const p = { fill: 'none', stroke: color, strokeWidth, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
-  
+
   const paths: Record<string, React.ReactNode> = {
     camera: <><Path {...p} d="M3 8.5A2 2 0 0 1 5 6.5h2l1.2-1.8A1 1 0 0 1 9 4.2h6a1 1 0 0 1 .8.5L17 6.5h2a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><Circle {...p} cx="12" cy="13" r="3.4"/></>,
     sparkle: <><Path {...p} d="M12 3.5l1.8 4.7L18.5 10l-4.7 1.8L12 16.5l-1.8-4.7L5.5 10l4.7-1.8z"/><Path {...p} d="M18.5 3.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z"/></>,
@@ -47,7 +47,7 @@ export function Icon({ name, size = 22, color = '#000', strokeWidth = 1.9, style
     personFill: <><Circle cx="12" cy="8" r="4" fill={color} stroke="none"/><Path d="M4.5 20.5c0-4 3.4-6.6 7.5-6.6s7.5 2.6 7.5 6.6z" fill={color} stroke="none"/></>,
     bell: <><Path {...p} d="M6 9a6 6 0 0 1 12 0c0 5 1.6 6.5 1.6 6.5H4.4S6 14 6 9z"/><Path {...p} d="M10 19a2 2 0 0 0 4 0"/></>,
     receipt: <><Path {...p} d="M6 3.5h12v17l-2.2-1.4-2 1.4-1.8-1.4-1.8 1.4-2-1.4L6 20.5z"/><Path {...p} d="M9 8h6M9 11.5h6M9 15h4"/></>,
-    
+
     droplet: <Path {...p} d="M12 3.5c0 0 6 6.2 6 10.5a6 6 0 0 1-12 0C6 9.7 12 3.5 12 3.5z"/>,
     plug: <><Path {...p} d="M9 3v4M15 3v4"/><Path {...p} d="M7 7h10v3.5a5 5 0 0 1-10 0z"/><Path {...p} d="M12 15.5V21"/></>,
     brush: <><Rect {...p} x="4" y="4" width="11" height="5" rx="1.5"/><Path {...p} d="M15 6.5h3.5v3H15"/><Path {...p} d="M9.5 9v2.4a1.6 1.6 0 0 1-1.6 1.6A1.6 1.6 0 0 0 6.3 14.6V15"/><Rect {...p} x="5" y="15" width="3" height="5.5" rx="1"/></>,

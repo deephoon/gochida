@@ -2,11 +2,11 @@
  * ==========================================
  * 1. 흐름 (Data & State Flow Diagram)
  * ==========================================
- * [View Layer] (upload.tsx) 
+ * [View Layer] (upload.tsx)
  *   -- (imageUris, location, symptom) -->
- * [Context Layer] (RequestContext.tsx) 
+ * [Context Layer] (RequestContext.tsx)
  *   -- (Call fetchAnalysis) -->
- * [Service Layer] (aiService.ts) 
+ * [Service Layer] (aiService.ts)
  *   -- (Check EXPO_PUBLIC_USE_MOCK_AI)
  *       ├─(True)──> Return Mock JSON with delay (Fallback)
  *       └─(False)─> Call Gemini API (Promise.race for Timeout)
@@ -15,9 +15,9 @@
  *            ├─(Irrelevant)─────> Return AIRepairAnalysis (status: REJECTED)
  *            └─(Timeout)────────> Throw Error "응답 시간 초과"
  *   <-- (Return Result or Throw Error) --
- * [Context Layer] 
+ * [Context Layer]
  *   -- (Update global state: analysisResult, loading, error) -->
- * [View Layer] (analysis.tsx) 
+ * [View Layer] (analysis.tsx)
  *   -- (Render UI based on state)
  */
 
@@ -256,9 +256,9 @@ export const analyzeImage = async (
   imageBase64s: string[]
 ): Promise<AIRepairAnalysis> => {
   const validBase64s = (imageBase64s || []).filter(b => typeof b === 'string' && b.trim() !== '');
-  
+
   console.log(`[Gochida AI] Valid image count: ${validBase64s.length}`);
-  
+
   if (validBase64s.length === 0) {
     throw new Error('이미지 데이터가 없습니다.');
   }

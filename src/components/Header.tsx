@@ -14,7 +14,7 @@ interface AppHeaderProps {
 export function AppHeader({ title, onBack, showBack = true, right }: AppHeaderProps) {
   const insets = useSafeAreaInsets();
   const paddingTop = Math.max(insets.top, 20) + 10;
-  
+
   return (
     <View style={[styles.appHeaderContainer, { paddingTop }]}>
       {showBack && onBack ? (

@@ -12,12 +12,12 @@ interface PressableScaleProps extends PressableProps {
   activeOpacity?: number;
 }
 
-export function PressableScale({ 
-  children, 
-  style, 
-  scaleTo = theme.motion.pressScale, 
+export function PressableScale({
+  children,
+  style,
+  scaleTo = theme.motion.pressScale,
   activeOpacity = theme.motion.activeOpacity,
-  ...props 
+  ...props
 }: PressableScaleProps) {
   const scale = useSharedValue(1);
   const opacity = useSharedValue(1);
